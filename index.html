@@ -3,298 +3,690 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vindix — Modelos Computacionais e Complexidade no PI</title>
+<title>VINDIX · Modelos Computacionais e Complexidade</title>
+<meta name="description" content="Autômatos finitos, autômatos de pilha e P vs NP aplicados ao Vindix, sistema de gestão para clínicas.">
+<link rel="icon" href="assets/Vindix-perfil.png">
 <style>
-:root{--bg:#0f1720;--card:#16212d;--tx:#e6edf3;--mu:#9fb0c0;--ac:#3ecf8e;--ac2:#5aa9ff;--bd:#243243;--code:#0b121a}
-@media (prefers-color-scheme:light){:root{--bg:#f6f8fa;--card:#fff;--tx:#1b2430;--mu:#5a6878;--ac:#0e9f6e;--ac2:#1f6feb;--bd:#d8dee4;--code:#f0f3f6}}
+@font-face{font-family:Bricolage;src:url(assets/bricolage-grotesque.woff2) format("woff2");font-weight:200 800;font-display:swap}
+@font-face{font-family:Figtree;src:url(assets/figtree.woff2) format("woff2");font-weight:300 900;font-display:swap}
+:root{--bg:#0d0a17;--surface:#17132a;--surface-2:#211b3a;--line:#2f2850;--text:#ece8f6;--muted:#a79fc0;--brand:#b48ae8;--brand-2:#e08ae8;--brand-3:#7aa8ff;--soft:#2a2247;--ok:#5fd39a;--bad:#ff7a90;--warn:#f0b45a;--code:#09070f;--r:16px;--max:1080px}
 *{box-sizing:border-box}
-body{margin:0;font:17px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx)}
-header{padding:64px 20px 40px;text-align:center;border-bottom:1px solid var(--bd)}
-header h1{font-size:2.6rem;margin:0 0 8px;letter-spacing:-.02em}
-header h1 span{color:var(--ac)}
-header p{color:var(--mu);max-width:720px;margin:0 auto}
-nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--bd);z-index:9;overflow-x:auto;white-space:nowrap;text-align:center}
-nav a{display:inline-block;padding:12px 14px;color:var(--mu);text-decoration:none;font-size:.92rem}
-nav a:hover{color:var(--ac)}
-main{max-width:920px;margin:0 auto;padding:0 20px 80px}
-section{padding-top:48px}
-h2{font-size:1.75rem;border-left:4px solid var(--ac);padding-left:12px;margin:0 0 16px}
-h3{font-size:1.2rem;margin:28px 0 8px;color:var(--ac2)}
-.tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:99px;border:1px solid var(--ac);color:var(--ac);margin-right:6px;vertical-align:middle}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:18px 20px;margin:16px 0}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
-.grid .card{margin:0}
-pre{background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:14px;overflow-x:auto;font-size:.85rem;line-height:1.5}
-code{font-family:ui-monospace,Consolas,monospace;font-size:.88em}
-p code,li code,td code{background:var(--code);padding:1px 5px;border-radius:4px}
-table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.92rem}
-th,td{border:1px solid var(--bd);padding:8px 10px;text-align:left;vertical-align:top}
-th{background:var(--card)}
-.ok{color:var(--ac)}.mu{color:var(--mu)}
-.callout{border-left:4px solid var(--ac2);background:var(--card);padding:12px 16px;border-radius:0 8px 8px 0;margin:18px 0}
-svg text{font-family:system-ui,sans-serif;fill:var(--tx)}
-footer{text-align:center;color:var(--mu);font-size:.85rem;padding:30px;border-top:1px solid var(--bd)}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--text);font:16.5px/1.7 Figtree,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+h1,h2,h3{font-family:Bricolage,Figtree,sans-serif;line-height:1.12;letter-spacing:-.02em}
+h2{font-size:clamp(1.8rem,4vw,2.7rem);margin:0 0 .4em}
+h3{font-size:1.25rem;margin:1.8em 0 .5em;color:var(--brand)}
+a{color:var(--brand)}
+code{font-family:ui-monospace,Consolas,monospace;font-size:.86em;background:var(--surface-2);padding:.12em .4em;border-radius:6px}
+pre{background:var(--code);border:1px solid var(--line);padding:16px 18px;border-radius:12px;overflow-x:auto;font-size:.84rem;line-height:1.6}
+pre code{background:none;padding:0}
+pre .c{color:#7f78a0}pre .k{color:#c9a6f2}pre .s{color:#9fe0bd}pre .n{color:#ffcf8a}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 22px}
+.muted{color:var(--muted)}
+
+/* progress + nav */
+#progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:20;background:linear-gradient(90deg,var(--brand-3),var(--brand),var(--brand-2));box-shadow:0 0 12px var(--brand)}
+nav.top{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+nav.top .wrap{display:flex;align-items:center;gap:18px;height:62px}
+.brand{display:flex;align-items:center;gap:10px;font-family:Bricolage;font-weight:800;font-size:1.15rem;text-decoration:none;color:var(--text)}
+.brand img{width:32px;height:32px;border-radius:9px;transition:transform .6s cubic-bezier(.3,1.6,.5,1)}
+.brand:hover img{transform:rotate(-12deg) scale(1.12)}
+nav ul{display:flex;gap:4px;list-style:none;margin:0 0 0 auto;padding:0}
+nav a.l{display:block;padding:6px 12px;border-radius:9px;color:var(--muted);text-decoration:none;font-size:.9rem;transition:.25s}
+nav a.l:hover,nav a.l.on{background:var(--soft);color:var(--brand)}
+@media(max-width:820px){nav ul{display:none}}
+
+/* hero */
+header.hero{position:relative;padding:110px 0 90px;overflow:hidden;min-height:88vh;display:flex;align-items:center}
+.orb{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;animation:float 18s ease-in-out infinite}
+.o1{width:520px;height:520px;background:#6b34c9;top:-160px;right:-120px}
+.o2{width:380px;height:380px;background:#c04fb8;bottom:-140px;left:-100px;animation-delay:-6s}
+.o3{width:300px;height:300px;background:#3b6fe0;top:30%;left:45%;animation-delay:-11s;opacity:.35}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(60px,-40px) scale(1.1)}66%{transform:translate(-40px,50px) scale(.92)}}
+#grid{position:absolute;inset:0;opacity:.5;pointer-events:none}
+.hero .wrap{position:relative;z-index:1}
+.eyebrow{display:inline-block;font-size:.76rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);background:color-mix(in srgb,var(--soft) 80%,transparent);border:1px solid var(--line);padding:6px 13px;border-radius:99px}
+.hero h1{font-size:clamp(2.6rem,7.5vw,5.4rem);margin:.35em 0 .3em;max-width:13ch}
+.grad{background:linear-gradient(100deg,var(--brand-3),var(--brand),var(--brand-2),var(--brand-3));background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 6s linear infinite}
+@keyframes shine{to{background-position:300% 0}}
+.lead{font-size:1.22rem;color:var(--muted);max-width:60ch;min-height:3.4em}
+.caret{display:inline-block;width:2px;height:1.1em;background:var(--brand);vertical-align:-3px;margin-left:2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.meta{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:26px;font-size:.92rem;color:var(--muted)}
+.meta b{color:var(--text)}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:30px}
+.chip{padding:9px 16px;border-radius:99px;border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 70%,transparent);text-decoration:none;color:var(--text);font-weight:600;font-size:.92rem;transition:.3s}
+.chip:hover{border-color:var(--brand);transform:translateY(-3px);box-shadow:0 10px 30px -10px var(--brand)}
+.scroll-hint{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);width:26px;height:42px;border:2px solid var(--muted);border-radius:14px;z-index:1}
+.scroll-hint::after{content:"";position:absolute;left:50%;top:8px;width:4px;height:8px;margin-left:-2px;border-radius:2px;background:var(--brand);animation:wheel 1.8s infinite}
+@keyframes wheel{0%{opacity:0;transform:translateY(0)}30%{opacity:1}100%{opacity:0;transform:translateY(14px)}}
+
+/* sections */
+section{padding:90px 0 20px}
+.num{font-family:Bricolage;font-weight:800;color:var(--brand);font-size:.9rem;letter-spacing:.1em}
+.tag{display:inline-block;font-size:.72rem;font-weight:800;letter-spacing:.1em;padding:3px 10px;border-radius:99px;background:var(--soft);color:var(--brand);border:1px solid var(--line);vertical-align:middle;margin-left:8px}
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px;transition:transform .35s,border-color .35s,box-shadow .35s;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0;background:radial-gradient(300px circle at var(--mx,50%) var(--my,50%),color-mix(in srgb,var(--brand) 18%,transparent),transparent 60%);opacity:0;transition:opacity .3s;pointer-events:none}
+.card:hover{border-color:color-mix(in srgb,var(--brand) 55%,var(--line));transform:translateY(-4px);box-shadow:0 20px 40px -20px #000}
+.card:hover::before{opacity:1}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:22px 0}
+.icon{font-size:1.7rem;display:inline-block;margin-bottom:6px;transition:transform .5s cubic-bezier(.3,1.8,.5,1)}
+.card:hover .icon{transform:scale(1.25) rotate(-8deg)}
+.card strong{display:block;font-family:Bricolage;font-size:1.08rem;margin-bottom:4px}
+.callout{border:1px solid var(--line);border-left:4px solid var(--brand);background:linear-gradient(90deg,var(--soft),transparent);padding:16px 20px;border-radius:0 12px 12px 0;margin:22px 0}
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.93rem;background:var(--surface);border-radius:12px;overflow:hidden}
+th,td{border-bottom:1px solid var(--line);padding:11px 14px;text-align:left;vertical-align:top}
+th{background:var(--surface-2);font-family:Bricolage}
+tr{transition:background .2s}
+tbody tr:hover{background:var(--soft)}
+.ok{color:var(--ok);font-weight:700}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(34px);transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1)}
+.rv.in{opacity:1;transform:none}
+.rv.d1{transition-delay:.1s}.rv.d2{transition-delay:.2s}.rv.d3{transition-delay:.3s}.rv.d4{transition-delay:.4s}.rv.d5{transition-delay:.5s}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin:30px 0}
+.stat{text-align:center;padding:22px 10px}
+.stat .v{font-family:Bricolage;font-weight:800;font-size:2.6rem;line-height:1}
+.stat .k{color:var(--muted);font-size:.88rem;margin-top:6px}
+
+/* architecture */
+.arch{display:flex;align-items:center;gap:0;flex-wrap:wrap;justify-content:center;margin:30px 0}
+.node{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 18px;text-align:center;min-width:150px}
+.node b{font-family:Bricolage;display:block}
+.node small{color:var(--muted)}
+.pipe{width:70px;height:3px;background:var(--line);position:relative;overflow:hidden;margin:0 4px}
+.pipe::after{content:"";position:absolute;top:0;left:-40%;width:40%;height:100%;background:linear-gradient(90deg,transparent,var(--brand),transparent);animation:flow 1.6s linear infinite}
+@keyframes flow{to{left:100%}}
+@media(max-width:760px){.pipe{width:3px;height:30px}.pipe::after{width:100%;height:40%;top:-40%;left:0;animation:flowv 1.6s linear infinite}.arch{flex-direction:column}}
+@keyframes flowv{to{top:100%}}
+
+/* timeline */
+.tl{position:relative;margin:24px 0;padding-left:28px}
+.tl::before{content:"";position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:linear-gradient(var(--brand),var(--brand-2),transparent)}
+.tl li{list-style:none;position:relative;margin:0 0 14px}
+.tl li::before{content:"";position:absolute;left:-26px;top:7px;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--brand);box-shadow:0 0 0 4px color-mix(in srgb,var(--brand) 20%,transparent)}
+
+/* demos */
+.demo{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:24px;margin:26px 0;position:relative}
+.demo .lbl{position:absolute;top:-12px;left:18px;font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;background:linear-gradient(90deg,var(--brand),var(--brand-2));color:#140f22;padding:3px 10px;border-radius:99px}
+input[type=text],select{font:inherit;font-family:ui-monospace,Consolas,monospace;background:var(--code);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 14px;outline:none;transition:.25s;width:100%}
+input[type=text]:focus,select:focus{border-color:var(--brand);box-shadow:0 0 0 4px color-mix(in srgb,var(--brand) 22%,transparent)}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.row>*{flex:1 1 200px}
+button.btn{font:inherit;font-weight:700;cursor:pointer;border:0;border-radius:10px;padding:10px 18px;background:linear-gradient(90deg,var(--brand),var(--brand-2));color:#140f22;transition:.25s;flex:0 0 auto}
+button.btn:hover{transform:translateY(-2px);box-shadow:0 10px 26px -8px var(--brand)}
+button.btn.ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--line)}
+.verdict{display:inline-flex;align-items:center;gap:8px;font-weight:800;padding:6px 14px;border-radius:99px;transition:.3s;flex:0 0 auto}
+.verdict.yes{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.verdict.no{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+.verdict.pop{animation:pop .45s cubic-bezier(.3,1.8,.5,1)}
+@keyframes pop{0%{transform:scale(.6)}100%{transform:scale(1)}}
+
+/* dfa */
+.dfa{display:flex;align-items:center;overflow-x:auto;padding:22px 4px 10px;gap:0}
+.st{flex:0 0 auto;width:46px;height:46px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-family:Bricolage;font-weight:700;font-size:.85rem;color:var(--muted);transition:all .35s;position:relative;background:var(--bg)}
+.st.final::after{content:"";position:absolute;inset:4px;border-radius:50%;border:2px solid var(--line);transition:.35s}
+.st.on{border-color:var(--brand);color:var(--text);box-shadow:0 0 0 6px color-mix(in srgb,var(--brand) 25%,transparent),0 0 24px var(--brand);transform:scale(1.12)}
+.st.done{border-color:color-mix(in srgb,var(--brand) 60%,var(--line));color:var(--text)}
+.st.acc{border-color:var(--ok);box-shadow:0 0 0 6px color-mix(in srgb,var(--ok) 25%,transparent),0 0 28px var(--ok)}
+.st.acc::after{border-color:var(--ok)}
+.st.err{border-color:var(--bad);box-shadow:0 0 0 6px color-mix(in srgb,var(--bad) 25%,transparent);animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.ar{flex:0 0 auto;width:34px;position:relative;text-align:center;font-family:ui-monospace,monospace;font-size:.78rem;color:var(--muted)}
+.ar span{position:absolute;top:-20px;left:0;right:0}
+.ar::before{content:"";display:block;height:2px;background:var(--line);transition:.35s}
+.ar.done::before{background:var(--brand)}
+.tape{display:flex;gap:4px;margin-top:14px;flex-wrap:wrap}
+.tape i{font-style:normal;font-family:ui-monospace,monospace;width:28px;height:34px;display:grid;place-items:center;border:1px solid var(--line);border-radius:7px;background:var(--code);transition:.3s}
+.tape i.cur{border-color:var(--brand);background:var(--soft);transform:translateY(-4px)}
+.tape i.okc{border-color:color-mix(in srgb,var(--ok) 60%,var(--line))}
+.tape i.bad{border-color:var(--bad);color:var(--bad)}
+
+/* stack */
+.stackwrap{display:grid;grid-template-columns:1fr 170px;gap:24px;align-items:end;margin-top:16px}
+@media(max-width:640px){.stackwrap{grid-template-columns:1fr}}
+.stack{height:250px;border:2px solid var(--line);border-top:0;border-radius:0 0 14px 14px;display:flex;flex-direction:column-reverse;padding:8px;gap:6px;background:linear-gradient(transparent,var(--code))}
+.cell{height:36px;border-radius:9px;display:grid;place-items:center;font-family:ui-monospace,monospace;font-weight:800;font-size:1.1rem;background:linear-gradient(90deg,var(--brand),var(--brand-2));color:#140f22;animation:push .4s cubic-bezier(.3,1.6,.5,1)}
+.cell.z{background:var(--surface-2);color:var(--muted);font-size:.85rem}
+.cell.out{animation:popout .35s forwards}
+@keyframes push{from{transform:translateY(-140px);opacity:0}to{transform:none;opacity:1}}
+@keyframes popout{to{transform:translateY(-140px) rotate(8deg);opacity:0}}
+.log{font-family:ui-monospace,monospace;font-size:.82rem;background:var(--code);border:1px solid var(--line);border-radius:10px;padding:10px 14px;height:250px;overflow:auto}
+.log div{animation:fadein .3s}
+@keyframes fadein{from{opacity:0;transform:translateX(-8px)}}
+
+/* conflict */
+.track{position:relative;height:54px;background:var(--code);border:1px solid var(--line);border-radius:10px;margin:10px 0}
+.track .bar{position:absolute;top:9px;height:34px;border-radius:8px;display:grid;place-items:center;white-space:nowrap;overflow:hidden;font-size:.72rem;font-weight:700;color:#140f22;transition:left .25s,width .25s}
+.b1{background:linear-gradient(90deg,var(--brand-3),#a7c4ff)}
+.b2{background:linear-gradient(90deg,var(--brand),var(--brand-2))}
+.ov{position:absolute;top:4px;height:44px;border-radius:8px;background:repeating-linear-gradient(45deg,color-mix(in srgb,var(--bad) 55%,transparent) 0 6px,transparent 6px 12px);border:2px solid var(--bad);transition:.25s;animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.5}}
+.hours{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--brand)}
+
+/* explosion */
+.boom{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+@media(max-width:640px){.boom{grid-template-columns:1fr}}
+.meter{height:16px;border-radius:99px;background:var(--code);border:1px solid var(--line);overflow:hidden}
+.meter i{display:block;height:100%;border-radius:99px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.big{font-family:Bricolage;font-weight:800;font-size:2rem;line-height:1.1;margin:6px 0}
+
+/* final */
+.pipeline{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin:26px 0}
+.pipeline span{padding:9px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--line);font-weight:700;font-size:.9rem}
+.pipeline em{font-style:normal;color:var(--brand);font-weight:800}
+footer{margin-top:80px;padding:40px 0;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:.9rem}
+footer .names{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:14px 0}
+footer .names span{padding:6px 14px;border-radius:99px;background:var(--surface);border:1px solid var(--line);color:var(--text);font-weight:600;transition:.3s}
+footer .names span:hover{border-color:var(--brand);transform:translateY(-3px) rotate(-2deg)}
+#top{position:fixed;right:20px;bottom:20px;width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--brand);font-size:1.2rem;cursor:pointer;opacity:0;transform:translateY(20px);transition:.35s;z-index:9}
+#top.show{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
 </style>
 </head>
 <body>
-<header>
-  <h1><span>Vindix</span></h1>
-  <p>Sistema de gestão para clínicas multidisciplinares — documento técnico da ADC2:<br>
-  <strong>Aplicação de Modelos Computacionais e Complexidade no Projeto Integrador</strong></p>
+<div id="progress"></div>
+
+<nav class="top"><div class="wrap">
+  <a class="brand" href="#"><img src="assets/Vindix-perfil.png" alt="">VINDIX</a>
+  <ul>
+    <li><a class="l" href="#projeto">Projeto</a></li>
+    <li><a class="l" href="#estado">Estado atual</a></li>
+    <li><a class="l" href="#afd">Nível 3</a></li>
+    <li><a class="l" href="#pilha">Nível 2</a></li>
+    <li><a class="l" href="#pnp">P vs NP</a></li>
+    <li><a class="l" href="#conclusao">Conclusão</a></li>
+  </ul>
+</div></nav>
+
+<header class="hero">
+  <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+  <canvas id="grid"></canvas>
+  <div class="wrap">
+    <span class="eyebrow rv">Projeto Integrador · Modelos Computacionais · ADC2</span>
+    <h1 class="rv d1">Autômatos e complexidade no <span class="grad">VINDIX</span></h1>
+    <p class="lead rv d2"><span id="typed"></span><span class="caret"></span></p>
+    <div class="meta rv d3">
+      <span><b>Curso:</b> Engenharia de Computação · UNISAL</span>
+      <span><b>Sistema:</b> <a href="https://vindix.tech">vindix.tech</a></span>
+      <span><b>Código:</b> <a href="https://github.com/pifaculdade2025/vindix">github.com/pifaculdade2025/vindix</a></span>
+    </div>
+    <div class="chips rv d4">
+      <a class="chip" href="#afd">🔤 Expressões regulares e AFD</a>
+      <a class="chip" href="#pilha">📚 Autômatos de pilha</a>
+      <a class="chip" href="#pnp">⏱️ P vs NP</a>
+    </div>
+  </div>
+  <div class="scroll-hint"></div>
 </header>
-<nav>
-  <a href="#visao">1. Visão geral</a><a href="#estado">2. Estado atual</a><a href="#lexico">3. Nível 3 — AFD</a><a href="#sintatico">4. Nível 2 — Pilha</a><a href="#complexidade">5. P vs NP</a><a href="#conclusao">6. Conclusão</a>
-</nav>
-<main>
 
-<!-- ============ 1 ============ -->
-<section id="visao">
-<h2>1. Visão Geral do Projeto</h2>
-<h3>O problema</h3>
-<p>Clínicas multidisciplinares (psicologia, fonoaudiologia, terapia ocupacional, fisioterapia etc.) costumam controlar pacientes, agendas e repasses de profissionais com planilhas, agendas de papel e mensagens soltas. Isso gera <strong>choque de horários</strong>, dados sensíveis de saúde espalhados sem controle de acesso, retrabalho no faturamento de convênios e falta de indicadores para a gestão.</p>
-<h3>A solução proposta</h3>
-<p>O <strong>Vindix</strong> é uma aplicação web <em>multiempresa</em> (cada clínica tem seu próprio banco de dados) que centraliza:</p>
-<div class="grid">
-  <div class="card"><strong>Cadastros</strong><br><span class="mu">Pacientes, profissionais e responsáveis, com validação rigorosa (CPF, telefone, e-mail, carteirinha).</span></div>
-  <div class="card"><strong>Agenda</strong><br><span class="mu">Agendamentos únicos e recorrentes com detecção de conflito e sincronização com o Google Agenda.</span></div>
-  <div class="card"><strong>Consultas e evolução</strong><br><span class="mu">Registro dos atendimentos realizados e histórico do paciente.</span></div>
-  <div class="card"><strong>Convênios e financeiro</strong><br><span class="mu">Guias, registro ANS, preços por especialidade e repasse dos profissionais.</span></div>
-  <div class="card"><strong>Permissões granulares</strong><br><span class="mu">Códigos de permissão por tabela e por ação, com histórico de alterações.</span></div>
-  <div class="card"><strong>LGPD</strong><br><span class="mu">Campos sensíveis criptografados, termos de aceite, exportação de dados do titular.</span></div>
-</div>
-<h3>Arquitetura</h3>
-<svg viewBox="0 0 860 190" width="100%" role="img" aria-label="Arquitetura do Vindix">
-  <g fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--ac)">
-    <rect x="10" y="50" width="170" height="80" rx="10"/><rect x="250" y="20" width="250" height="140" rx="10"/>
-    <rect x="570" y="20" width="140" height="60" rx="10"/><rect x="570" y="105" width="140" height="60" rx="10"/><rect x="740" y="60" width="110" height="60" rx="10"/>
-  </g>
-  <g stroke="var(--mu)" stroke-width="1.5" marker-end="url(#a)"><line x1="180" y1="90" x2="248" y2="90"/><line x1="500" y1="55" x2="568" y2="50"/><line x1="500" y1="125" x2="568" y2="135"/><line x1="710" y1="50" x2="738" y2="80"/></g>
-  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--mu)"/></marker></defs>
-  <text x="95" y="85" text-anchor="middle" font-size="15" font-weight="600">Front-end</text><text x="95" y="106" text-anchor="middle" font-size="12">HTML/CSS/JS puro</text>
-  <text x="375" y="48" text-anchor="middle" font-size="15" font-weight="600">API Node.js + Express 5</text>
-  <text x="375" y="74" text-anchor="middle" font-size="12">JWT · helmet · rate-limit · toobusy</text>
-  <text x="375" y="96" text-anchor="middle" font-size="12">regras.js (validação léxica)</text>
-  <text x="375" y="118" text-anchor="middle" font-size="12">express.json (análise sintática)</text>
-  <text x="375" y="140" text-anchor="middle" font-size="12">permissões · agenda · convênios</text>
-  <text x="640" y="47" text-anchor="middle" font-size="13" font-weight="600">Firebird</text><text x="640" y="65" text-anchor="middle" font-size="11">1 banco por clínica</text>
-  <text x="640" y="132" text-anchor="middle" font-size="13" font-weight="600">Nodemailer</text><text x="640" y="150" text-anchor="middle" font-size="11">recuperação de senha</text>
-  <text x="795" y="88" text-anchor="middle" font-size="13" font-weight="600">Google</text><text x="795" y="105" text-anchor="middle" font-size="11">Agenda API</text>
-</svg>
-<p class="mu">As conexões com os bancos das clínicas ficam num cache <code>LRUCache</code> de pools (<code>conexaoBD.js</code>), para que o servidor atenda várias empresas sem abrir conexões ilimitadas.</p>
+<main class="wrap">
+
+<!-- 01 -->
+<section id="projeto">
+  <div class="num rv">01</div>
+  <h2 class="rv">O projeto</h2>
+  <p class="rv">Clínicas multidisciplinares (psicologia, fonoaudiologia, terapia ocupacional, fisioterapia…) costumam controlar pacientes, agendas e repasses com planilhas, agendas de papel e mensagens soltas. O resultado é <b>choque de horários</b>, dados de saúde espalhados sem controle de acesso, retrabalho no faturamento de convênios e falta de indicadores para a gestão.</p>
+  <p class="rv">O <b>VINDIX</b> é uma aplicação web <b>multiempresa</b>, em que cada clínica tem seu próprio banco de dados, e que centraliza tudo isso:</p>
+  <div class="grid">
+    <div class="card rv d1"><span class="icon">🧾</span><strong>Cadastros</strong><span class="muted">Pacientes, profissionais e responsáveis, com validação rigorosa de CPF, telefone, e-mail e carteirinha.</span></div>
+    <div class="card rv d2"><span class="icon">📅</span><strong>Agenda</strong><span class="muted">Agendamentos únicos e recorrentes, detecção de conflito e sincronização com o Google Agenda.</span></div>
+    <div class="card rv d3"><span class="icon">🩺</span><strong>Consultas e evolução</strong><span class="muted">Registro dos atendimentos e histórico do paciente.</span></div>
+    <div class="card rv d1"><span class="icon">💳</span><strong>Convênios e financeiro</strong><span class="muted">Guias, registro ANS, preço por especialidade e repasse dos profissionais.</span></div>
+    <div class="card rv d2"><span class="icon">🔐</span><strong>Permissões granulares</strong><span class="muted">Códigos por tabela e por ação, com histórico de cada alteração.</span></div>
+    <div class="card rv d3"><span class="icon">🛡️</span><strong>LGPD</strong><span class="muted">Campos sensíveis criptografados, termos de aceite e exportação dos dados do titular.</span></div>
+  </div>
+
+  <h3 class="rv">Arquitetura</h3>
+  <div class="arch rv">
+    <div class="node"><b>Front-end</b><small>HTML · CSS · JS</small></div>
+    <div class="pipe"></div>
+    <div class="node"><b>API Node.js</b><small>Express 5 · JWT · helmet</small></div>
+    <div class="pipe"></div>
+    <div class="node"><b>Firebird</b><small>1 banco por clínica</small></div>
+    <div class="pipe"></div>
+    <div class="node"><b>Integrações</b><small>Google Agenda · e-mail</small></div>
+  </div>
+  <p class="muted rv">As conexões com os bancos das clínicas ficam num <code>LRUCache</code> de pools (<code>conexaoBD.js</code>). Assim o servidor atende várias empresas sem abrir conexões ilimitadas.</p>
+
+  <div class="stats">
+    <div class="card stat rv d1"><div class="v" data-count="10500">0</div><div class="k">linhas de código JS</div></div>
+    <div class="card stat rv d2"><div class="v" data-count="100" data-suffix="+">0</div><div class="k">rotas na API</div></div>
+    <div class="card stat rv d3"><div class="v" data-count="20" data-suffix="+">0</div><div class="k">expressões regulares de validação</div></div>
+    <div class="card stat rv d4"><div class="v" data-count="100" data-suffix=" kb">0</div><div class="k">limite do corpo JSON</div></div>
+  </div>
 </section>
 
-<!-- ============ 2 ============ -->
+<!-- 02 -->
 <section id="estado">
-<h2>2. Estado Atual de Desenvolvimento</h2>
-<table>
-<tr><th>Módulo</th><th>Situação</th><th>Onde no código</th></tr>
-<tr><td>Login, JWT, recuperação de senha por e-mail</td><td class="ok">Implementado</td><td><code>auth.js</code>, <code>recuperacao.js</code></td></tr>
-<tr><td>Usuários, fotos e permissões com histórico</td><td class="ok">Implementado</td><td><code>funcoes.js</code></td></tr>
-<tr><td>Cadastros de pacientes/profissionais</td><td class="ok">Implementado</td><td><code>regras.js</code>, <code>funcoes.js</code></td></tr>
-<tr><td>Agendamentos (únicos e recorrentes) + conflito</td><td class="ok">Implementado</td><td><code>funcoes.js</code></td></tr>
-<tr><td>Sincronização com Google Agenda</td><td class="ok">Implementado</td><td><code>agenda.js</code></td></tr>
-<tr><td>Convênios, guias e financeiro</td><td class="ok">Implementado</td><td><code>convenios.js</code>, <code>clinica.js</code></td></tr>
-<tr><td>Resumo (indicadores e gráficos)</td><td class="ok">Implementado</td><td><code>funcoes.js</code></td></tr>
-<tr><td>LGPD: termos, exportação, criptografia</td><td class="ok">Implementado</td><td><code>privacidade.js</code>, <code>cripto.js</code></td></tr>
-<tr><td>Migrações de banco, backup/restore, licenças</td><td class="ok">Implementado</td><td><code>scripts/</code>, <code>BKP_BD/</code></td></tr>
-</table>
-<h3>Próximos passos</h3>
-<ul>
-  <li><strong>Sugestão automática de horários</strong> livres para recorrências, usando a heurística descrita na seção 5.</li>
-  <li><strong>Testes automatizados</strong> para o módulo de validação (<code>regras.js</code>), usando os AFDs da seção 3 como casos de teste.</li>
-  <li><strong>Implantação em produção</strong> com HTTPS e proxy reverso, e monitoramento do servidor.</li>
-  <li><em>[Grupo: revisar/completar esta lista com o planejamento real.]</em></li>
-</ul>
+  <div class="num rv">02</div>
+  <h2 class="rv">Estado atual do desenvolvimento</h2>
+  <table class="rv">
+    <thead><tr><th>Módulo</th><th>Situação</th><th>Onde no código</th></tr></thead>
+    <tbody>
+    <tr><td>Login, JWT e recuperação de senha por e-mail</td><td class="ok">✔ Implementado</td><td><code>auth.js</code> · <code>recuperacao.js</code></td></tr>
+    <tr><td>Usuários, fotos e permissões com histórico</td><td class="ok">✔ Implementado</td><td><code>funcoes.js</code></td></tr>
+    <tr><td>Cadastros de pacientes e profissionais</td><td class="ok">✔ Implementado</td><td><code>regras.js</code> · <code>funcoes.js</code></td></tr>
+    <tr><td>Agendamentos únicos e recorrentes com conflito</td><td class="ok">✔ Implementado</td><td><code>funcoes.js</code></td></tr>
+    <tr><td>Sincronização com Google Agenda</td><td class="ok">✔ Implementado</td><td><code>agenda.js</code></td></tr>
+    <tr><td>Convênios, guias e financeiro</td><td class="ok">✔ Implementado</td><td><code>convenios.js</code> · <code>clinica.js</code></td></tr>
+    <tr><td>Resumo (indicadores e gráficos)</td><td class="ok">✔ Implementado</td><td><code>funcoes.js</code></td></tr>
+    <tr><td>LGPD: termos, exportação e criptografia</td><td class="ok">✔ Implementado</td><td><code>privacidade.js</code> · <code>cripto.js</code></td></tr>
+    <tr><td>Migrações, backup/restore e licenças</td><td class="ok">✔ Implementado</td><td><code>scripts/</code> · <code>BKP_BD/</code></td></tr>
+    </tbody>
+  </table>
+  <h3 class="rv">Próximos passos</h3>
+  <ul class="tl">
+    <li class="rv d1"><b>Sugestão automática de horários</b> livres para recorrências, usando a heurística gulosa da seção 05.</li>
+    <li class="rv d2"><b>Testes automatizados</b> para <code>regras.js</code>, usando os AFDs da seção 03 como base dos casos de teste.</li>
+    <li class="rv d3"><b>Implantação em produção</b> com HTTPS, proxy reverso e monitoramento do servidor.</li>
+  </ul>
 </section>
 
-<!-- ============ 3 ============ -->
-<section id="lexico">
-<h2><span class="tag">Nível 3</span>Validação Léxica com Expressões Regulares e AFD</h2>
-<p>Na hierarquia de Chomsky, as <strong>linguagens regulares</strong> (Tipo 3) são exatamente as reconhecidas por <strong>Autômatos Finitos Determinísticos</strong>, e toda expressão regular pode ser convertida num AFD. Um AFD usa <strong>memória constante</strong> (só o estado atual) e decide se aceita uma entrada de tamanho <em>n</em> em <strong>O(n)</strong>, lendo cada caractere uma única vez. Por isso é o modelo ideal para a "porta de entrada" do sistema: todo dado vindo do formulário passa por um reconhecedor regular antes de chegar ao banco.</p>
+<!-- 03 -->
+<section id="afd">
+  <div class="num rv">03</div>
+  <h2 class="rv">Validação léxica com AFD <span class="tag">NÍVEL 3</span></h2>
+  <p class="rv">Na hierarquia de Chomsky, as <b>linguagens regulares</b> (Tipo 3) são exatamente as que um <b>Autômato Finito Determinístico</b> reconhece, e toda expressão regular pode ser convertida num AFD. Um AFD tem <b>memória constante</b> (só o estado atual) e decide uma entrada de tamanho <i>n</i> em <b>O(n)</b>, lendo cada caractere uma única vez. Por isso ele é o modelo ideal para a "porta de entrada" do sistema: todo dado de formulário passa por um reconhecedor regular antes de chegar ao banco.</p>
 
-<h3>3.1 Onde isso está no Vindix</h3>
-<p>O arquivo <code>FonteJS/source/regras.js</code> define, para cada campo de cada tabela, um tipo, um tamanho máximo e uma expressão regular. A função <code>normalizar()</code> rejeita qualquer entrada fora da linguagem com <code>{ erro: 'formato inválido' }</code>.</p>
-<table>
-<tr><th>Campo</th><th>Expressão regular (real, do código)</th><th>Linguagem aceita</th></tr>
-<tr><td>Telefone</td><td><code>^[0-9()+\-\s]+$</code></td><td>dígitos, parênteses, +, - e espaço</td></tr>
-<tr><td>Carteirinha / Nº guia / ANS</td><td><code>^[0-9A-Za-z.\-\/ ]+$</code></td><td>alfanumérico com . - /</td></tr>
-<tr><td>Login</td><td><code>^[a-zA-Z0-9._@-]{3,64}$</code></td><td>3 a 64 símbolos de um alfabeto restrito</td></tr>
-<tr><td>E-mail</td><td><code>^[a-z0-9._%+'-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$</code></td><td>local@domínio.tld (+ limite de 254)</td></tr>
-<tr><td>Data</td><td><code>^(\d{4})-(\d{2})-(\d{2})$</code></td><td>AAAA-MM-DD</td></tr>
-<tr><td>Hora</td><td><code>^(\d{2}):(\d{2})(?::(\d{2}))?$</code></td><td>HH:MM ou HH:MM:SS</td></tr>
-<tr><td>Token de recuperação</td><td><code>^[0-9a-f]{64}$</code></td><td>exatamente 64 dígitos hexadecimais</td></tr>
-<tr><td>Imagem (foto)</td><td><code>^[A-Za-z0-9+/]+={0,2}$</code></td><td>Base64 válido</td></tr>
-<tr><td>Origem CORS</td><td><code>^https?:\/\/[a-z0-9.-]+(:\d+)?$</code></td><td>URL de origem sem caminho</td></tr>
-</table>
+  <div class="demo rv">
+    <span class="lbl">Teste ao vivo · AFD da data</span>
+    <p class="muted" style="margin-top:0">Esta é a expressão <code>^\d{4}-\d{2}-\d{2}$</code> de <code>regras.js</code> como autômato. Digite uma data e veja os estados acenderem um a um.</p>
+    <div class="row">
+      <input type="text" id="dfaIn" value="2026-12-04" maxlength="16" spellcheck="false" aria-label="Data">
+      <button class="btn" id="dfaRun">▶ Executar</button>
+      <span class="verdict" id="dfaV"></span>
+    </div>
+    <div class="dfa" id="dfa"></div>
+    <div class="tape" id="tape"></div>
+    <p class="muted" style="font-size:.85rem">d = dígito 0–9. Estado inicial q0, estado de aceitação q10 (círculo duplo). Qualquer transição que não está desenhada leva a um estado de erro.</p>
+  </div>
 
-<h3>3.2 AFD do campo Data</h3>
-<p>A expressão <code>^\d{4}-\d{2}-\d{2}$</code> corresponde ao AFD abaixo (Σ = dígitos ∪ {"-"}; qualquer transição não desenhada vai para um estado de erro implícito):</p>
-<svg viewBox="0 0 860 120" width="100%" role="img" aria-label="AFD da data">
-  <defs><marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--mu)"/></marker></defs>
-  <g stroke="var(--mu)" stroke-width="1.4" marker-end="url(#b)">
-    <line x1="5" y1="60" x2="23" y2="60"/>
-  </g>
-  <g id="nodes"></g>
-  <script>
-  (function(){var s=document.currentScript.parentNode,ns="http://www.w3.org/2000/svg",lab=["d","d","d","d","-","d","d","-","d","d"];
-  for(var i=0;i<=10;i++){var x=45+i*76;var c=document.createElementNS(ns,"circle");c.setAttribute("cx",x);c.setAttribute("cy",60);c.setAttribute("r",20);c.setAttribute("fill","none");c.setAttribute("stroke","var(--ac)");c.setAttribute("stroke-width","1.6");s.appendChild(c);
-   if(i==10){var c2=c.cloneNode();c2.setAttribute("r",15);s.appendChild(c2);}
-   var t=document.createElementNS(ns,"text");t.setAttribute("x",x);t.setAttribute("y",65);t.setAttribute("text-anchor","middle");t.setAttribute("font-size","13");t.textContent="q"+i;s.appendChild(t);
-   if(i<10){var l=document.createElementNS(ns,"line");l.setAttribute("x1",x+20);l.setAttribute("y1",60);l.setAttribute("x2",x+55);l.setAttribute("y2",60);l.setAttribute("stroke","var(--mu)");l.setAttribute("stroke-width","1.4");l.setAttribute("marker-end","url(#b)");s.appendChild(l);
-    var tl=document.createElementNS(ns,"text");tl.setAttribute("x",x+38);tl.setAttribute("y",48);tl.setAttribute("text-anchor","middle");tl.setAttribute("font-size","13");tl.textContent=lab[i];s.appendChild(tl);}}
-  })();
-  </script>
-</svg>
-<p class="mu">d = qualquer dígito 0–9. Estado inicial q0, estado de aceitação q10. Memória: 11 estados, independentemente do tamanho da entrada.</p>
+  <h3 class="rv">As expressões reais do VINDIX</h3>
+  <div class="demo rv">
+    <span class="lbl">Teste ao vivo · regras.js</span>
+    <div class="row">
+      <select id="rxSel"></select>
+      <input type="text" id="rxIn" spellcheck="false" aria-label="Valor">
+      <span class="verdict" id="rxV"></span>
+    </div>
+    <pre style="margin-bottom:0"><code id="rxShow"></code></pre>
+  </div>
 
-<h3>3.3 O limite do modelo — e como o código respeita esse limite</h3>
-<div class="callout">Um AFD reconhece o <em>formato</em> <code>AAAA-MM-DD</code>, mas "30 de fevereiro" ou "mês 13" exigem regras semânticas. E o dígito verificador do CPF é uma soma ponderada módulo 11.</div>
-<p>O grupo separou as duas responsabilidades: a regex faz a análise léxica e uma segunda etapa faz a verificação semântica. Na data, <code>dataValida(a, m, d)</code> monta um <code>Date</code> e confere se ele "volta" igual. No CPF:</p>
-<pre><code>export function cpfValido(cpf) {
-    if (!/^\d{11}$/.test(cpf) || /^(\d)\1{10}$/.test(cpf)) return false;  // filtro léxico
-    for (const t of [9, 10]) {                                           // dígitos verificadores
-        let soma = 0;
-        for (let i = 0; i &lt; t; i++) soma += Number(cpf[i]) * (t + 1 - i);
-        if ((soma * 10) % 11 % 10 !== Number(cpf[t])) return false;
+  <h3 class="rv">O limite do modelo, e como o código lida com ele</h3>
+  <div class="callout rv">O AFD reconhece o <b>formato</b> <code>AAAA-MM-DD</code>, mas "30 de fevereiro" ou "mês 13" exigem regras <b>semânticas</b>. O dígito verificador do CPF é uma soma ponderada módulo 11.</div>
+  <p class="rv">O grupo separou as duas responsabilidades: a regex faz a análise léxica e uma segunda etapa faz a verificação semântica. Na data, <code>dataValida(a, m, d)</code> monta um <code>Date</code> e confere se ele "volta" igual. No CPF:</p>
+<pre class="rv"><code><span class="k">export function</span> cpfValido(cpf) {
+    <span class="k">if</span> (!<span class="s">/^\d{11}$/</span>.test(cpf) || <span class="s">/^(\d)\1{10}$/</span>.test(cpf)) <span class="k">return</span> <span class="n">false</span>;  <span class="c">// filtro léxico</span>
+    <span class="k">for</span> (<span class="k">const</span> t <span class="k">of</span> [<span class="n">9</span>, <span class="n">10</span>]) {                                           <span class="c">// dígitos verificadores</span>
+        <span class="k">let</span> soma = <span class="n">0</span>;
+        <span class="k">for</span> (<span class="k">let</span> i = <span class="n">0</span>; i &lt; t; i++) soma += Number(cpf[i]) * (t + <span class="n">1</span> - i);
+        <span class="k">if</span> ((soma * <span class="n">10</span>) % <span class="n">11</span> % <span class="n">10</span> !== Number(cpf[t])) <span class="k">return</span> <span class="n">false</span>;
     }
-    return true;
+    <span class="k">return</span> <span class="n">true</span>;
 }</code></pre>
-<p>Observação de teoria: <code>/^(\d)\1{10}$/</code> usa uma <em>retrorreferência</em> (<code>\1</code>), recurso que vai <strong>além</strong> das linguagens regulares em geral. Aqui ela é inofensiva, porque o alfabeto é finito (10 dígitos): a linguagem "11 dígitos iguais" tem só 10 palavras, logo é finita e portanto regular, equivalente a <code>0{11}|1{11}|…|9{11}</code>. Ou seja, continua cabendo num AFD.</p>
-<p>Na prática, o dígito verificador do CPF <em>também</em> pode ser reconhecido por um AFD: como a soma é feita módulo 11, basta guardar (posição, soma mod 11), um número finito de estados. O grupo preferiu o laço por clareza; os dois têm custo O(n) e memória O(1).</p>
-
-<h3>3.4 Permissões como linguagem regular</h3>
-<p>Os códigos de permissão (<code>Observacoes.txt</code>) formam uma linguagem regular de dois símbolos: <code>1</code> | <code>2</code> | <code>[1-6][0-5]</code> | <code>50</code>, em que o 1º dígito é a tabela (1 cadastros, 2 consultas, 3 especialidades, 4 agendamentos, 6 financeiro) e o 2º é a ação (0 geral, 1 acessar, 2 inserir, 3 alterar, 4 excluir, 5 histórico). O middleware <code>exigirPermissao(1, 10, 12)</code> em cada rota da API funciona como um reconhecedor: a requisição só é aceita se o usuário tiver algum dos códigos listados.</p>
-
-<h3>3.5 Por que isso importa (segurança e ReDoS)</h3>
-<ul>
-<li>Todas as regex são <strong>ancoradas</strong> (<code>^…$</code>), então o reconhecedor aceita a palavra inteira, nunca um pedaço dela. Isso impede injeção de conteúdo extra.</li>
-<li>Os campos têm <strong>tamanho máximo</strong> (<code>max</code>) verificado <em>antes</em> da regex, e as buscas são truncadas em 100 caracteres (<code>filtroBusca</code>).</li>
-<li>As expressões usadas não têm quantificadores aninhados ambíguos (como <code>(a+)+</code>), que fariam o motor de <em>backtracking</em> do JavaScript ter custo exponencial (ataque <strong>ReDoS</strong>). Elas se comportam como um AFD de custo linear.</li>
-</ul>
+  <div class="grid">
+    <div class="card rv d1"><span class="icon">🔁</span><strong>A retrorreferência</strong><span class="muted"><code>/^(\d)\1{10}$/</code> usa <code>\1</code>, que em geral vai <i>além</i> das linguagens regulares. Aqui o alfabeto é finito e a linguagem tem só 10 palavras (<code>0{11}|…|9{11}</code>). Uma linguagem finita é sempre regular.</span></div>
+    <div class="card rv d2"><span class="icon">➗</span><strong>O CPF também cabe num AFD</strong><span class="muted">Como a soma é feita módulo 11, basta guardar (posição, soma mod 11), um número finito de estados. O laço foi escolhido por clareza: os dois têm custo O(n) e memória O(1).</span></div>
+    <div class="card rv d3"><span class="icon">🔑</span><strong>Permissões são regulares</strong><span class="muted">Os códigos <code>1 | 2 | [1-6][0-5]</code> combinam tabela e ação. O middleware <code>exigirPermissao(1, 10, 12)</code> de cada rota funciona como um reconhecedor: a requisição só passa se o usuário tiver um dos códigos.</span></div>
+  </div>
+  <h3 class="rv">Segurança: âncoras, limites e ReDoS</h3>
+  <ul class="tl">
+    <li class="rv d1">Todas as regex são <b>ancoradas</b> (<code>^…$</code>), então a palavra inteira precisa pertencer à linguagem. Isso impede conteúdo injetado no meio da entrada.</li>
+    <li class="rv d2">Os campos têm <b>tamanho máximo</b> verificado <i>antes</i> da regex, e as buscas são cortadas em 100 caracteres (<code>filtroBusca</code>).</li>
+    <li class="rv d3">Nenhuma expressão tem quantificadores aninhados ambíguos como <code>(a+)+</code>, que dariam custo <b>exponencial</b> ao motor de backtracking do JavaScript (ataque <b>ReDoS</b>). Todas se comportam como um AFD linear.</li>
+  </ul>
 </section>
 
-<!-- ============ 4 ============ -->
-<section id="sintatico">
-<h2><span class="tag">Nível 2</span>Análise Sintática e Autômatos de Pilha</h2>
-<p>Toda a comunicação entre o front-end e a API do Vindix é feita em <strong>JSON</strong>. O JSON é uma <strong>linguagem livre de contexto</strong> (Tipo 2): objetos e listas podem se aninhar em qualquer profundidade e cada <code>{</code>/<code>[</code> precisa ser fechado na ordem certa. Pelo <strong>Lema do Bombeamento</strong> para linguagens regulares, a linguagem dos colchetes balanceados <code>{ [ⁿ ]ⁿ }</code> <strong>não é regular</strong>: nenhum AFD, com memória finita, consegue "contar" n aberturas pendentes. Para isso é preciso uma <strong>pilha</strong>, ou seja, um <strong>Autômato de Pilha (AP)</strong>.</p>
+<!-- 04 -->
+<section id="pilha">
+  <div class="num rv">04</div>
+  <h2 class="rv">Análise sintática e autômatos de pilha <span class="tag">NÍVEL 2</span></h2>
+  <p class="rv">Toda a comunicação entre o front-end e a API do VINDIX é feita em <b>JSON</b>. O JSON é uma <b>linguagem livre de contexto</b> (Tipo 2): objetos e listas se aninham em qualquer profundidade, e cada <code>{</code>/<code>[</code> precisa ser fechado na ordem certa. Pelo <b>Lema do Bombeamento</b>, a linguagem <code>[ⁿ ]ⁿ</code> <b>não é regular</b>: nenhum AFD, com memória finita, consegue "contar" n aberturas pendentes. É preciso uma <b>pilha</b>, ou seja, um <b>Autômato de Pilha</b>.</p>
+<pre class="rv"><code><span class="c">// server.js</span>
+app.use(express.json({ limit: <span class="s">'100kb'</span> }));
+<span class="c">// ...</span>
+<span class="k">if</span> (status === <span class="n">413</span>) <span class="k">return</span> res.status(<span class="n">413</span>).json({ erro: <span class="s">'Conteúdo grande demais'</span> });
+<span class="k">if</span> (status &lt; <span class="n">500</span>)   <span class="k">return</span> res.status(status).json({ erro: <span class="s">'Requisição inválida'</span> });</code></pre>
+  <p class="rv">O <code>express.json</code> faz o <code>JSON.parse</code> do corpo de toda requisição. Esse parser é descendente recursivo, e a pilha de chamadas faz o papel da pilha do autômato. Um payload mal formado é rejeitado com HTTP 400 <b>antes</b> de chegar a qualquer regra de negócio.</p>
 
-<h3>4.1 Onde isso está no Vindix</h3>
-<pre><code>// server.js
-app.use(express.json({ limit: '100kb' }));
-...
-if (status === 413) return res.status(413).json({ erro: 'Conteúdo grande demais' });
-if (status &lt; 500)   return res.status(status).json({ erro: 'Requisição inválida' });</code></pre>
-<p>O <code>express.json</code> faz o <code>JSON.parse</code> do corpo de toda requisição. Esse parser é descendente recursivo, e a pilha de chamadas faz o papel da pilha do AP. Um payload mal formado (chave sem fechar, vírgula sobrando) é rejeitado <strong>antes</strong> de chegar a qualquer regra de negócio, com HTTP 400.</p>
+  <div class="demo rv">
+    <span class="lbl">Simulação · autômato de pilha</span>
+    <p class="muted" style="margin-top:0">Edite o JSON e aperte play. O autômato empilha cada <code>{</code>/<code>[</code> e desempilha quando encontra o fechamento correspondente. Teste também <code>{"ids":[1,2}</code>.</p>
+    <div class="row">
+      <input type="text" id="apIn" value='{"agenda":{"ids":[1,2],"tags":["a"]}}' spellcheck="false" aria-label="JSON">
+      <button class="btn" id="apRun">▶ Play</button>
+      <span class="verdict" id="apV"></span>
+    </div>
+    <div class="tape" id="apTape"></div>
+    <div class="stackwrap">
+      <div class="log" id="apLog"></div>
+      <div><div class="stack" id="apStack"></div><p class="muted" style="text-align:center;font-size:.8rem;margin:.4em 0 0">pilha (topo em cima)</p></div>
+    </div>
+  </div>
 
-<h3>4.2 Simulação do AP para <code>{"ids":[1,2]}</code></h3>
-<table>
-<tr><th>Símbolo lido</th><th>Ação</th><th>Pilha (topo à direita)</th></tr>
-<tr><td>—</td><td>início</td><td><code>Z₀</code></td></tr>
-<tr><td><code>{</code></td><td>empilha <code>{</code></td><td><code>Z₀ {</code></td></tr>
-<tr><td><code>"ids":</code></td><td>chave + dois-pontos (parte léxica, regular)</td><td><code>Z₀ {</code></td></tr>
-<tr><td><code>[</code></td><td>empilha <code>[</code></td><td><code>Z₀ { [</code></td></tr>
-<tr><td><code>1,2</code></td><td>valores (parte léxica)</td><td><code>Z₀ { [</code></td></tr>
-<tr><td><code>]</code></td><td>topo é <code>[</code>? desempilha</td><td><code>Z₀ {</code></td></tr>
-<tr><td><code>}</code></td><td>topo é <code>{</code>? desempilha</td><td><code>Z₀</code></td></tr>
-<tr><td>fim</td><td>pilha só com <code>Z₀</code> → <strong class="ok">aceita</strong></td><td><code>Z₀</code></td></tr>
-</table>
-<p>Em <code>{"ids":[1,2}</code> o AP lê <code>}</code> com <code>[</code> no topo, não há transição e a entrada é <strong>rejeitada</strong>.</p>
-
-<h3>4.3 Exemplo didático: o reconhecedor de balanceamento</h3>
-<pre><code>// Autômato de pilha simplificado: reconhece { } [ ] balanceados, ignorando strings
-function balanceado(texto) {
-  const pilha = [], par = { '}': '{', ']': '[' };
-  let emString = false, escape = false;
-  for (const c of texto) {                 // O(n): cada símbolo lido uma vez
-    if (emString) { if (escape) escape = false; else if (c === '\\') escape = true; else if (c === '"') emString = false; continue; }
-    if (c === '"') emString = true;
-    else if (c === '{' || c === '[') pilha.push(c);
-    else if (c === '}' || c === ']') { if (pilha.pop() !== par[c]) return false; }
+  <h3 class="rv">O código do reconhecedor</h3>
+<pre class="rv"><code><span class="c">// Autômato de pilha simplificado: reconhece { } [ ] balanceados, ignorando strings</span>
+<span class="k">function</span> balanceado(texto) {
+  <span class="k">const</span> pilha = [], par = { <span class="s">'}'</span>: <span class="s">'{'</span>, <span class="s">']'</span>: <span class="s">'['</span> };
+  <span class="k">let</span> emString = <span class="n">false</span>, escape = <span class="n">false</span>;          <span class="c">// parte finita (um AFD embutido)</span>
+  <span class="k">for</span> (<span class="k">const</span> c <span class="k">of</span> texto) {                          <span class="c">// O(n)</span>
+    <span class="k">if</span> (emString) { <span class="k">if</span> (escape) escape = <span class="n">false</span>; <span class="k">else if</span> (c === <span class="s">'\\'</span>) escape = <span class="n">true</span>; <span class="k">else if</span> (c === <span class="s">'"'</span>) emString = <span class="n">false</span>; <span class="k">continue</span>; }
+    <span class="k">if</span> (c === <span class="s">'"'</span>) emString = <span class="n">true</span>;
+    <span class="k">else if</span> (c === <span class="s">'{'</span> || c === <span class="s">'['</span>) pilha.push(c);       <span class="c">// empilha</span>
+    <span class="k">else if</span> (c === <span class="s">'}'</span> || c === <span class="s">']'</span>) { <span class="k">if</span> (pilha.pop() !== par[c]) <span class="k">return</span> <span class="n">false</span>; }
   }
-  return pilha.length === 0 &amp;&amp; !emString;
+  <span class="k">return</span> pilha.length === <span class="n">0</span> &amp;&amp; !emString;                <span class="c">// aceita com pilha vazia</span>
 }</code></pre>
-<p>Repare na composição dos níveis: o estado <code>emString</code>/<code>escape</code> é uma parte <em>finita</em> (um AFD embutido para reconhecer strings), e a pilha é a memória extra que só o Nível 2 oferece.</p>
-
-<h3>4.4 Limitando a memória do AP</h3>
-<p>Um AP teórico tem pilha infinita, mas um servidor real não tem. O limite de <strong>100 kb</strong> no corpo da requisição limita o tamanho da entrada e, com isso, a profundidade máxima da pilha. Isso protege o servidor de payloads gigantes ou profundamente aninhados (negação de serviço). Somado a isso, <code>toobusy-js</code> e <code>express-rate-limit</code> cortam a carga quando o laço de eventos está saturado.</p>
-
-<h3>4.5 Depois da sintaxe vem a semântica</h3>
-<p>Um JSON sintaticamente válido ainda pode ser inválido para o negócio. Depois do AP vem a etapa léxica/semântica da seção 3: <code>regras.js</code> percorre cada campo esperado, rejeita tipos errados (<code>'deve ser texto'</code>, <code>'deve ser um número inteiro'</code>) e aplica as regex. O pipeline completo é:</p>
-<p style="text-align:center"><strong>bytes → AP (JSON.parse) → AFDs por campo (regras.js) → regras de negócio (conflito, permissão) → banco</strong></p>
+  <div class="grid">
+    <div class="card rv d1"><span class="icon">📏</span><strong>Limitando a pilha</strong><span class="muted">Na teoria, a pilha de um autômato é infinita. Num servidor real, não. O limite de <b>100 kb</b> do corpo limita a entrada e, com ela, a profundidade máxima da pilha. Isso barra payloads gigantes ou aninhados demais (negação de serviço).</span></div>
+    <div class="card rv d2"><span class="icon">🚦</span><strong>Carga sob controle</strong><span class="muted"><code>toobusy-js</code> e <code>express-rate-limit</code> recusam requisições quando o laço de eventos do Node está saturado.</span></div>
+    <div class="card rv d3"><span class="icon">🧩</span><strong>Depois da sintaxe, a semântica</strong><span class="muted">Um JSON válido ainda pode estar errado para o negócio. <code>regras.js</code> confere o tipo de cada campo (<code>'deve ser texto'</code>, <code>'deve ser um número inteiro'</code>) e aplica as regex da seção 03.</span></div>
+  </div>
+  <div class="pipeline rv">
+    <span>bytes</span><em>→</em><span>📚 autômato de pilha</span><em>→</em><span>🔤 AFDs por campo</span><em>→</em><span>⚖️ regras de negócio</span><em>→</em><span>🗄️ banco</span>
+  </div>
 </section>
 
-<!-- ============ 5 ============ -->
-<section id="complexidade">
-<h2><span class="tag">P vs NP</span>Análise de Complexidade e Tratabilidade</h2>
+<!-- 05 -->
+<section id="pnp">
+  <div class="num rv">05</div>
+  <h2 class="rv">Complexidade e tratabilidade <span class="tag">P vs NP</span></h2>
+  <h3 class="rv">Custo dos algoritmos centrais</h3>
+  <table class="rv">
+    <thead><tr><th>Operação</th><th>Como é feita</th><th>Complexidade</th></tr></thead>
+    <tbody>
+    <tr><td>Validar um campo</td><td>regex ancorada (AFD)</td><td>O(n) no tamanho do campo</td></tr>
+    <tr><td>Validar o corpo JSON</td><td>parser com pilha</td><td>O(n), n ≤ 100 kb</td></tr>
+    <tr><td>Validar CPF</td><td>duas somas módulo 11</td><td>O(1), são 11 dígitos fixos</td></tr>
+    <tr><td>Detectar conflito de horário</td><td><code>SELECT FIRST 1</code> por sobreposição de intervalos</td><td>O(log A + k) com índice</td></tr>
+    <tr><td>Agendamento recorrente (r vezes)</td><td>r verificações de conflito</td><td>O(r · log A)</td></tr>
+    <tr><td>Listagens</td><td>paginação fixa (máx. 100 por página)</td><td>custo limitado por página</td></tr>
+    <tr><td>Indicadores do Resumo</td><td>agregação + <code>sort</code> de rankings</td><td>O(m log m)</td></tr>
+    </tbody>
+  </table>
+  <p class="muted rv" style="font-size:.88rem">A = agendamentos no banco · k = sobreposições encontradas · m = itens do ranking</p>
 
-<h3>5.1 Custo dos algoritmos centrais</h3>
-<table>
-<tr><th>Operação</th><th>Como é feita</th><th>Complexidade</th></tr>
-<tr><td>Validar um campo</td><td>regex ancorada (AFD)</td><td>O(n) no tamanho do campo</td></tr>
-<tr><td>Validar o corpo JSON</td><td>parser com pilha</td><td>O(n), n ≤ 100 kb</td></tr>
-<tr><td>Validar CPF</td><td>dois somatórios módulo 11</td><td>O(1) (11 dígitos fixos)</td></tr>
-<tr><td>Detectar conflito de um agendamento</td><td><code>SELECT FIRST 1</code> por sobreposição de intervalos, filtrando terapeuta OU paciente</td><td>O(log A + k) com índice, O(A) sem índice</td></tr>
-<tr><td>Agendamento recorrente (r repetições)</td><td>r verificações de conflito</td><td>O(r · log A)</td></tr>
-<tr><td>Listagens</td><td>paginação fixa (máx. 100 por página)</td><td>custo da página limitado</td></tr>
-<tr><td>Indicadores do Resumo</td><td>agregação + <code>sort</code> de rankings</td><td>O(m log m)</td></tr>
-<tr><td>Conferir permissão</td><td>pertinência num conjunto de códigos</td><td>O(p), p pequeno</td></tr>
-</table>
-<p class="mu">A = agendamentos no banco; k = agendamentos sobrepostos encontrados; m = itens do ranking.</p>
+  <h3 class="rv">Conflito de horário: um problema em P</h3>
+  <p class="rv">Dois intervalos [i₁, f₁) e [i₂, f₂) se sobrepõem se, e somente se, <b>i₁ &lt; f₂ e f₁ &gt; i₂</b>. Arraste os controles para ver a condição funcionando:</p>
+  <div class="demo rv">
+    <span class="lbl">Simulação · sobreposição de intervalos</span>
+    <div class="hours"><span>08h</span><span>10h</span><span>12h</span><span>14h</span><span>16h</span><span>18h</span></div>
+    <div class="track"><div class="bar b1" id="cb1">existente</div></div>
+    <div class="track" id="trk2"><div class="bar b2" id="cb2">novo</div><div class="ov" id="cov"></div></div>
+    <div class="row" style="margin-top:12px">
+      <label>Início do novo agendamento<input type="range" id="cStart" min="0" max="18" value="5"></label>
+      <label>Duração (× 30 min)<input type="range" id="cDur" min="1" max="6" value="2"></label>
+      <span class="verdict" id="cV"></span>
+    </div>
+    <pre style="margin-bottom:0"><code id="cExpr"></code></pre>
+  </div>
+  <p class="rv">É exatamente essa condição que a consulta de <code>conflitoAgendamento()</code> usa:</p>
+<pre class="rv"><code><span class="k">SELECT FIRST</span> <span class="n">1</span> A.ID_TERAPEUTA <span class="k">FROM</span> AGENDAMENTOS A
+ <span class="k">WHERE</span> A.STATUS = <span class="s">'AGENDADO'</span> <span class="k">AND</span> A.ID &lt;&gt; ?
+   <span class="k">AND</span> (A.ID_TERAPEUTA = ? <span class="k">OR</span> A.ID_PACIENTE = ?)
+   <span class="k">AND</span> A.DT_HR_AGENDADA &lt; ?                  <span class="c">-- início existente &lt; fim novo</span>
+   <span class="k">AND</span> DATEADD(... A.TEMPO_PREVISTO ...) &gt; ?  <span class="c">-- fim existente  &gt; início novo</span></code></pre>
+  <div class="grid">
+    <div class="card rv d1"><span class="icon">✅</span><strong>Verificar ≠ otimizar</strong><span class="muted">O sistema responde a uma pergunta de decisão ("este horário é viável?"), que é polinomial. Ele não tenta montar sozinho a agenda ótima.</span></div>
+    <div class="card rv d2"><span class="icon">⚡</span><strong>FIRST 1</strong><span class="muted">O banco para no primeiro conflito encontrado, sem montar a lista inteira.</span></div>
+    <div class="card rv d3"><span class="icon">🔂</span><strong>Recorrência gulosa</strong><span class="muted">As r datas são verificadas uma a uma, e o usuário escolhe <code>pularConflitos</code>. Decisão local, custo linear em r.</span></div>
+    <div class="card rv d4"><span class="icon">🧱</span><strong>Lote em duas fases</strong><span class="muted">Na edição em lote, tudo é verificado antes de qualquer gravação ("Nada foi alterado"). Nunca fica um estado parcial.</span></div>
+  </div>
 
-<h3>5.2 A verificação de conflito: um problema em P</h3>
-<p>Dois intervalos [i₁, f₁) e [i₂, f₂) se sobrepõem se, e somente se, <strong>i₁ &lt; f₂ e f₁ &gt; i₂</strong>. É exatamente essa condição que a consulta de <code>conflitoAgendamento()</code> usa:</p>
-<pre><code>SELECT FIRST 1 A.ID_TERAPEUTA FROM AGENDAMENTOS A
- WHERE A.STATUS = 'AGENDADO' AND A.ID &lt;&gt; ?
-   AND (A.ID_TERAPEUTA = ? OR A.ID_PACIENTE = ?)
-   AND A.DT_HR_AGENDADA &lt; ?               -- início existente &lt; fim novo
-   AND DATEADD(... A.TEMPO_PREVISTO ...) &gt; ? -- fim existente  &gt; início novo</code></pre>
-<p>Decisões de engenharia aqui:</p>
-<ul>
-<li><strong>Verificar ≠ otimizar.</strong> O sistema responde a uma pergunta de decisão ("este horário é viável?"), que é polinomial, em vez de tentar montar sozinho a agenda ótima da clínica.</li>
-<li><code>FIRST 1</code> faz o banco parar no primeiro conflito encontrado, sem montar a lista inteira.</li>
-<li>Na recorrência, as r datas são verificadas uma a uma e o usuário escolhe <strong>pular os conflitos</strong> (<code>pularConflitos</code>). É uma decisão gulosa, local e de custo linear em r.</li>
-<li>Na edição em lote, <strong>todos</strong> os conflitos são verificados antes de gravar qualquer coisa ("Nada foi alterado"). É um plano de duas fases que evita estados parciais.</li>
-</ul>
+  <h3 class="rv">Onde o PI esbarra em NP</h3>
+  <p class="rv">A pergunta natural de uma clínica é: <i>"distribua automaticamente os pacientes da semana entre os profissionais, respeitando especialidade, disponibilidade, preferência de horário do paciente (campo <code>PREFERENCIA</code>), salas e convênio, e minimizando janelas vazias."</i></p>
+  <div class="callout rv">Isso é <b>timetabling</b>, ou alocação de recursos com restrições. Na versão de decisão ("existe uma agenda que satisfaz tudo?") ele é <b>NP-completo</b>, por redução da <b>coloração de grafos</b>: cada sessão é um vértice, sessões que não podem coincidir (mesmo paciente, terapeuta ou sala) são ligadas por arestas, e os horários são as "cores". Decidir se um grafo admite k cores é NP-completo para k ≥ 3.</div>
 
-<h3>5.3 Onde o PI esbarra em NP</h3>
-<p>A pergunta natural de uma clínica é: <em>"distribua automaticamente os pacientes da semana entre os profissionais, respeitando especialidade, disponibilidade do terapeuta, preferência de horário do paciente (campo <code>PREFERENCIA</code>), salas e convênio, minimizando janelas vazias."</em></p>
-<div class="callout">Esse é um problema de <strong>timetabling / alocação de recursos com restrições</strong>. Na versão de decisão ("existe uma agenda que satisfaz todas as restrições?") ele é <strong>NP-completo</strong>, por redução da <strong>coloração de grafos</strong>: cada sessão é um vértice, sessões que não podem coincidir (mesmo paciente, mesmo terapeuta, mesma sala) são ligadas por arestas, e os horários disponíveis são as "cores". Decidir se o grafo admite k cores é NP-completo para k ≥ 3.</div>
-<p>Força bruta: com S sessões e H horários candidatos, há até <strong>Hˢ</strong> agendas possíveis. Para uma semana modesta (S = 60 sessões, H = 40 horários) isso é 40⁶⁰ ≈ 10⁹⁶ combinações, muito além do número estimado de átomos no universo (~10⁸⁰). Não há hardware que execute isso. Como não se conhece algoritmo polinomial para problemas NP-completos (P vs NP está em aberto), o grupo <strong>não</strong> busca a solução ótima.</p>
+  <div class="demo rv">
+    <span class="lbl">Simulação · explosão combinatória</span>
+    <p class="muted" style="margin-top:0">Com <b>H = 40</b> horários na semana, quantas agendas a força bruta teria que testar? Arraste o número de sessões.</p>
+    <label>Sessões na semana: <b id="sN">60</b><input type="range" id="sR" min="1" max="120" value="60"></label>
+    <div class="boom">
+      <div class="card"><strong>💥 Força bruta · 40<sup>S</sup></strong><div class="big" id="bfV"></div><div class="meter"><i id="bfM" style="background:linear-gradient(90deg,var(--warn),var(--bad))"></i></div><p class="muted" id="bfT" style="font-size:.85rem"></p></div>
+      <div class="card"><strong>🧠 Heurística gulosa · S·log S + S·H</strong><div class="big" id="grV"></div><div class="meter"><i id="grM" style="background:linear-gradient(90deg,var(--ok),#9fe0bd)"></i></div><p class="muted" id="grT" style="font-size:.85rem"></p></div>
+    </div>
+  </div>
+  <p class="rv">Não se conhece algoritmo polinomial para problemas NP-completos (a questão P vs NP está em aberto). Por isso o grupo <b>não</b> busca a solução ótima.</p>
 
-<h3>5.4 A heurística adotada (e planejada)</h3>
-<p><strong>Hoje:</strong> a alocação é <em>assistida</em>. A recepção propõe o horário e o sistema decide, em tempo polinomial, se ele é viável. O "problema difícil" fica dividido em muitas perguntas fáceis.</p>
-<p><strong>Próximo passo, sugestão automática de horários:</strong> uma heurística gulosa de coloração (<em>DSatur / maior grau primeiro</em>):</p>
-<ol>
-<li>Ordenar as sessões pendentes pelo número de horários possíveis, da mais restrita para a menos restrita: O(S log S).</li>
-<li>Para cada sessão, escolher o primeiro horário livre compatível com terapeuta, paciente e preferência: O(H) por sessão, cada teste usando a verificação de conflito da seção 5.2.</li>
-<li>Se não houver horário, a sessão vai para uma lista de pendências que a recepção resolve manualmente.</li>
-</ol>
-<p>Custo total: <strong>O(S log S + S · H · log A)</strong>, polinomial, executando em milissegundos para o volume de uma clínica. O preço desse ganho: a solução pode não ser ótima (talvez sobre uma janela que o ótimo eliminaria), mas é <strong>boa, rápida e explicável</strong>, e o humano continua no controle.</p>
+  <h3 class="rv">A heurística adotada</h3>
+  <p class="rv"><b>Hoje:</b> a alocação é <i>assistida</i>. A recepção propõe o horário e o sistema decide, em tempo polinomial, se ele é viável. O problema difícil vira muitas perguntas fáceis.</p>
+  <p class="rv"><b>Próximo passo, a sugestão automática:</b> coloração gulosa no estilo <b>DSatur</b>, que começa pela sessão mais restrita:</p>
+  <ul class="tl">
+    <li class="rv d1">Ordenar as sessões pendentes pelo número de horários possíveis, da mais restrita para a menos restrita: <b>O(S log S)</b>.</li>
+    <li class="rv d2">Para cada sessão, escolher o primeiro horário compatível com terapeuta, paciente e preferência: <b>O(H)</b> testes, cada um com a verificação de conflito acima.</li>
+    <li class="rv d3">Sem horário possível, a sessão vai para uma lista de pendências que a recepção resolve.</li>
+  </ul>
+  <div class="callout rv">Custo total: <b>O(S log S + S · H · log A)</b>, polinomial, em milissegundos para o volume de uma clínica. O preço é que a agenda pode não ser a ótima, mas ela é <b>boa, rápida e explicável</b>, e a decisão final continua com uma pessoa.</div>
 
-<h3>5.5 Outros trade-offs de custo computacional</h3>
-<ul>
-<li><strong>bcrypt</strong> para senhas é <em>propositalmente</em> caro (custo exponencial no fator de trabalho). Aqui a lentidão é a defesa: dificulta força bruta. O <code>loginLimiter</code>/<code>loginSlow</code> controlam esse custo no servidor.</li>
-<li><strong>Google Agenda</strong>: quando a API responde 429/403 (limite de requisições), o <code>agenda.js</code> faz novas tentativas com esperas crescentes (<em>backoff</em>), em vez de insistir em laço.</li>
-<li><strong>LRUCache de pools</strong>: memória limitada para N clínicas, com remoção da menos usada em O(1).</li>
-<li><strong>Paginação obrigatória</strong>: nenhuma rota devolve uma tabela inteira, então o custo de cada resposta é limitado independentemente do tamanho do banco.</li>
-</ul>
+  <h3 class="rv">Outros trade-offs de custo</h3>
+  <div class="grid">
+    <div class="card rv d1"><span class="icon">🐢</span><strong>bcrypt</strong><span class="muted">Lento <i>de propósito</i>: o custo cresce exponencialmente com o fator de trabalho e dificulta força bruta. <code>loginLimiter</code> e <code>loginSlow</code> controlam esse custo no servidor.</span></div>
+    <div class="card rv d2"><span class="icon">⏳</span><strong>Backoff no Google</strong><span class="muted">Quando a API responde 429/403, o <code>agenda.js</code> tenta de novo com esperas crescentes, em vez de insistir em laço.</span></div>
+    <div class="card rv d3"><span class="icon">🗃️</span><strong>LRU de conexões</strong><span class="muted">Memória limitada para N clínicas: a menos usada sai em O(1).</span></div>
+    <div class="card rv d4"><span class="icon">📄</span><strong>Paginação obrigatória</strong><span class="muted">Nenhuma rota devolve uma tabela inteira, então o custo de cada resposta é limitado.</span></div>
+  </div>
 </section>
 
-<!-- ============ 6 ============ -->
+<!-- 06 -->
 <section id="conclusao">
-<h2>6. Como a disciplina ajudou no desenvolvimento do PI</h2>
-<div class="grid">
-<div class="card"><strong>Nível 3 → entrada segura</strong><br><span class="mu">Saber que regex = AFD nos levou a validar todo campo com expressões ancoradas, lineares e com tamanho máximo, e a separar o léxico (formato) do semântico (CPF, data real).</span></div>
-<div class="card"><strong>Nível 2 → limites de memória</strong><br><span class="mu">Entender que JSON exige pilha explicou por que o parser precisa de limite (100 kb) e por que a validação acontece em camadas: sintaxe primeiro, regras depois.</span></div>
-<div class="card"><strong>P vs NP → escopo realista</strong><br><span class="mu">Reconhecer que a agenda ótima é NP-completa evitou que tentássemos um "otimizador perfeito". Escolhemos verificação polinomial agora e uma heurística gulosa depois.</span></div>
-</div>
-<p>O principal aprendizado de engenharia foi <strong>escolher o modelo computacional mais simples que resolve cada problema</strong>: AFD onde basta memória finita, autômato de pilha só onde há aninhamento, e heurísticas polinomiais onde o problema exato é intratável. Cada nível acima custa mais memória ou tempo, e a disciplina nos deu as ferramentas para justificar essas escolhas.</p>
+  <div class="num rv">06</div>
+  <h2 class="rv">Como a disciplina ajudou no PI</h2>
+  <div class="grid">
+    <div class="card rv d1"><span class="icon">🔤</span><strong>Nível 3 → entrada segura</strong><span class="muted">Saber que regex equivale a AFD nos levou a validar cada campo com expressões ancoradas, lineares e com tamanho máximo, e a separar o formato (léxico) do significado (CPF, data real).</span></div>
+    <div class="card rv d2"><span class="icon">📚</span><strong>Nível 2 → limites de memória</strong><span class="muted">Entender que JSON exige pilha explicou por que o parser precisa de limite (100 kb) e por que a validação é feita em camadas: sintaxe primeiro, regras depois.</span></div>
+    <div class="card rv d3"><span class="icon">⏱️</span><strong>P vs NP → escopo realista</strong><span class="muted">Reconhecer que a agenda ótima é NP-completa evitou um "otimizador perfeito" impossível. Escolhemos verificação polinomial agora e uma heurística gulosa depois.</span></div>
+  </div>
+  <p class="rv" style="font-size:1.15rem">O principal aprendizado foi <b>escolher o modelo computacional mais simples que resolve cada problema</b>: AFD onde basta memória finita, pilha só onde há aninhamento, e heurísticas polinomiais onde o problema exato é intratável. Cada nível acima custa mais tempo ou memória, e a disciplina nos deu as ferramentas para justificar essas escolhas.</p>
 </section>
 
 </main>
+
 <footer>
-Vindix · Projeto Integrador 2025 · Repositório: <a href="https://github.com/pifaculdade2025/vindix" style="color:var(--ac)">github.com/pifaculdade2025/vindix</a><br>
-Integrantes: Rafael, Diego, Vinícius e Murilo
+  <div class="wrap">
+    <img src="assets/Vindix-perfil.png" alt="" width="44" height="44" style="border-radius:12px">
+    <div class="names"><span>Rafael</span><span>Diego</span><span>Vinícius</span><span>Murilo</span></div>
+    VINDIX · Projeto Integrador · Engenharia de Computação · UNISAL<br>
+    <a href="https://github.com/pifaculdade2025/vindix">github.com/pifaculdade2025/vindix</a>
+  </div>
 </footer>
+<button id="top" aria-label="Voltar ao topo">↑</button>
+
+<script>
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = s => document.querySelector(s);
+const wait = ms => new Promise(r => setTimeout(r, RM ? 0 : ms));
+
+/* reveal + counters */
+const io = new IntersectionObserver(es => es.forEach(e => {
+  if (!e.isIntersecting) return;
+  e.target.classList.add('in'); io.unobserve(e.target);
+  e.target.querySelectorAll?.('[data-count]').forEach(count);
+}), { threshold: .12 });
+document.querySelectorAll('.rv').forEach(el => io.observe(el));
+function count(el) {
+  const to = +el.dataset.count, suf = el.dataset.suffix || '', t0 = performance.now(), d = RM ? 1 : 1600;
+  (function f(t) { const p = Math.min(1, (t - t0) / d), v = Math.round(to * (1 - Math.pow(1 - p, 3)));
+    el.textContent = v.toLocaleString('pt-BR') + suf; if (p < 1) requestAnimationFrame(f); })(t0);
+}
+
+/* progress, nav, top */
+const links = [...document.querySelectorAll('nav a.l')];
+addEventListener('scroll', () => {
+  const h = document.documentElement, p = h.scrollTop / (h.scrollHeight - h.clientHeight);
+  $('#progress').style.width = (p * 100) + '%';
+  $('#top').classList.toggle('show', h.scrollTop > 600);
+  let cur = ''; document.querySelectorAll('section').forEach(s => { if (s.getBoundingClientRect().top < 140) cur = s.id; });
+  links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + cur));
+}, { passive: true });
+$('#top').onclick = () => scrollTo({ top: 0 });
+
+/* spotlight on cards */
+document.addEventListener('pointermove', e => {
+  const c = e.target.closest?.('.card'); if (!c) return;
+  const r = c.getBoundingClientRect();
+  c.style.setProperty('--mx', (e.clientX - r.left) + 'px'); c.style.setProperty('--my', (e.clientY - r.top) + 'px');
+});
+
+/* typewriter */
+(async () => {
+  const frases = ['Como a validação de linguagens, os limites de memória e a análise de complexidade guiaram as decisões de engenharia do nosso sistema de gestão para clínicas.'];
+  const el = $('#typed');
+  if (RM) { el.textContent = frases[0]; return; }
+  await wait(700);
+  for (const ch of frases[0]) { el.textContent += ch; await wait(22); }
+})();
+
+/* hero particle grid */
+(() => {
+  const cv = $('#grid'), ctx = cv.getContext('2d'); let W, H, pts = [];
+  const mouse = { x: -999, y: -999 };
+  function size() { W = cv.width = cv.offsetWidth; H = cv.height = cv.offsetHeight;
+    pts = Array.from({ length: Math.min(90, Math.floor(W * H / 14000)) }, () => ({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .35, vy: (Math.random() - .5) * .35 })); }
+  size(); addEventListener('resize', size);
+  cv.parentElement.addEventListener('pointermove', e => { const r = cv.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; });
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    for (const p of pts) { if (!RM) { p.x += p.vx; p.y += p.vy; } if (p.x < 0 || p.x > W) p.vx *= -1; if (p.y < 0 || p.y > H) p.vy *= -1; }
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i];
+      for (let j = i + 1; j < pts.length; j++) { const b = pts[j], d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (d < 130) { ctx.strokeStyle = `rgba(180,138,232,${(1 - d / 130) * .35})`; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); } }
+      const dm = Math.hypot(a.x - mouse.x, a.y - mouse.y);
+      if (dm < 160) { ctx.strokeStyle = `rgba(224,138,232,${(1 - dm / 160) * .6})`; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(mouse.x, mouse.y); ctx.stroke(); }
+      ctx.fillStyle = 'rgba(201,166,242,.8)'; ctx.beginPath(); ctx.arc(a.x, a.y, 1.6, 0, 7); ctx.fill();
+    }
+    if (!RM) requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* DFA demo */
+(() => {
+  const pat = ['d','d','d','d','-','d','d','-','d','d'], box = $('#dfa');
+  for (let i = 0; i <= 10; i++) {
+    box.insertAdjacentHTML('beforeend', `<div class="st${i === 10 ? ' final' : ''}" id="q${i}">q${i}</div>`);
+    if (i < 10) box.insertAdjacentHTML('beforeend', `<div class="ar" id="a${i}"><span>${pat[i]}</span></div>`);
+  }
+  let run = 0;
+  async function exec() {
+    const id = ++run, s = $('#dfaIn').value, tape = $('#tape'), v = $('#dfaV');
+    box.querySelectorAll('.st,.ar').forEach(e => e.className = e.className.split(' ').filter(c => c === 'st' || c === 'ar' || c === 'final').join(' '));
+    tape.innerHTML = [...s].map(c => `<i>${c === ' ' ? '␣' : c}</i>`).join(''); v.className = 'verdict'; v.textContent = '';
+    const cells = tape.children; let q = 0; $('#q0').classList.add('on');
+    for (let i = 0; i < s.length; i++) {
+      await wait(260); if (id !== run) return;
+      cells[i].classList.add('cur');
+      const okc = q < 10 && (pat[q] === 'd' ? /\d/.test(s[i]) : s[i] === '-');
+      $('#q' + q).classList.remove('on');
+      if (!okc) { $('#q' + q).classList.add('err'); cells[i].classList.add('bad'); return verdict(false, `rejeitado no símbolo "${s[i]}"`); }
+      $('#q' + q).classList.add('done'); $('#a' + q).classList.add('done');
+      cells[i].classList.remove('cur'); cells[i].classList.add('okc');
+      q++; $('#q' + q).classList.add('on');
+    }
+    await wait(200); if (id !== run) return;
+    if (q === 10) { $('#q10').classList.add('acc'); verdict(true, 'aceito'); }
+    else { $('#q' + q).classList.add('err'); verdict(false, `entrada acabou em q${q}`); }
+  }
+  function verdict(ok, t) { const v = $('#dfaV'); v.className = 'verdict pop ' + (ok ? 'yes' : 'no'); v.textContent = (ok ? '✔ ' : '✖ ') + t; }
+  $('#dfaRun').onclick = exec; $('#dfaIn').onkeydown = e => e.key === 'Enter' && exec();
+  const o = new IntersectionObserver(es => { if (es[0].isIntersecting) { exec(); o.disconnect(); } }, { threshold: .5 }); o.observe(box);
+})();
+
+/* regex tester */
+(() => {
+  const R = [
+    ['Telefone', /^[0-9()+\-\s]+$/, '(19) 99999-1234'],
+    ['E-mail', /^[a-z0-9._%+'-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/, 'contato@vindix.tech'],
+    ['Login', /^[a-zA-Z0-9._@-]{3,64}$/, 'murilo.alves'],
+    ['Carteirinha / Nº guia / ANS', /^[0-9A-Za-z.\-\/ ]+$/, '123.4567-8/01'],
+    ['Hora', /^(\d{2}):(\d{2})(?::(\d{2}))?$/, '14:30'],
+    ['Token de recuperação', /^[0-9a-f]{64}$/, 'a3f9'],
+    ['Origem CORS', /^https?:\/\/[a-z0-9.-]+(:\d+)?$/i, 'https://vindix.tech'],
+    ['CPF (filtro léxico)', /^\d{11}$/, '12345678909'],
+  ];
+  const sel = $('#rxSel'), inp = $('#rxIn'), v = $('#rxV');
+  R.forEach((r, i) => sel.insertAdjacentHTML('beforeend', `<option value="${i}">${r[0]}</option>`));
+  function test(anim) { const r = R[sel.value], ok = r[1].test(inp.value.trim());
+    $('#rxShow').textContent = r[1].toString();
+    v.className = 'verdict ' + (anim ? 'pop ' : '') + (ok ? 'yes' : 'no'); v.textContent = ok ? '✔ pertence à linguagem' : '✖ formato inválido'; }
+  sel.onchange = () => { inp.value = R[sel.value][2]; test(true); };
+  let last; inp.oninput = () => { const ok = R[sel.value][1].test(inp.value.trim()); test(ok !== last); last = ok; };
+  inp.value = R[0][2]; test(false);
+})();
+
+/* pushdown automaton demo */
+(() => {
+  let run = 0;
+  async function exec() {
+    const id = ++run, s = $('#apIn').value, st = $('#apStack'), log = $('#apLog'), tape = $('#apTape'), v = $('#apV');
+    st.innerHTML = '<div class="cell z">Z₀</div>'; log.innerHTML = ''; v.className = 'verdict'; v.textContent = '';
+    tape.innerHTML = [...s].map(c => `<i>${c === ' ' ? '␣' : c.replace(/</g, '&lt;')}</i>`).join('');
+    const cells = tape.children, pilha = [], par = { '}': '{', ']': '[' };
+    const L = t => { log.insertAdjacentHTML('beforeend', `<div>${t}</div>`); log.scrollTop = 1e9; };
+    let emStr = false, esc = false;
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i];
+      [...cells].forEach(x => x.classList.remove('cur')); cells[i].classList.add('cur');
+      if (emStr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') emStr = false; cells[i].classList.add('okc'); await wait(40); if (id !== run) return; continue; }
+      if (c === '"') { emStr = true; cells[i].classList.add('okc'); await wait(60); continue; }
+      if (c === '{' || c === '[') {
+        pilha.push(c); st.insertAdjacentHTML('beforeend', `<div class="cell">${c}</div>`);
+        L(`<span style="color:var(--brand)">push</span> ${c} → profundidade ${pilha.length}`); cells[i].classList.add('okc'); await wait(480);
+      } else if (c === '}' || c === ']') {
+        const topo = pilha.pop();
+        if (topo !== par[c]) { cells[i].classList.add('bad'); L(`<span style="color:var(--bad)">erro</span>: lido ${c}, topo era ${topo ?? 'Z₀'}`); return fim(false, 'rejeitado: HTTP 400'); }
+        const last = st.lastElementChild; last.classList.add('out'); await wait(330); if (id !== run) return; last.remove();
+        L(`<span style="color:var(--ok)">pop</span> ${topo} ↔ ${c} → profundidade ${pilha.length}`); cells[i].classList.add('okc'); await wait(260);
+      } else { cells[i].classList.add('okc'); await wait(40); }
+      if (id !== run) return;
+    }
+    [...cells].forEach(x => x.classList.remove('cur'));
+    if (pilha.length || emStr) { L(`<span style="color:var(--bad)">fim</span>: pilha não vazia (${pilha.join('')})`); fim(false, 'rejeitado: faltou fechar'); }
+    else { L('<span style="color:var(--ok)">fim</span>: pilha só com Z₀ → aceita'); fim(true, 'aceito'); }
+  }
+  function fim(ok, t) { const v = $('#apV'); v.className = 'verdict pop ' + (ok ? 'yes' : 'no'); v.textContent = (ok ? '✔ ' : '✖ ') + t; }
+  $('#apRun').onclick = exec; $('#apIn').onkeydown = e => e.key === 'Enter' && exec();
+  const o = new IntersectionObserver(es => { if (es[0].isIntersecting) { exec(); o.disconnect(); } }, { threshold: .4 }); o.observe($('#apStack'));
+})();
+
+/* interval conflict demo */
+(() => {
+  const SLOTS = 20, e1 = [6, 10]; // existente: 11h00–13h00 (slots de 30min desde 8h)
+  const hh = s => { const m = 8 * 60 + s * 30; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+  const b1 = $('#cb1'); b1.style.left = e1[0] / SLOTS * 100 + '%'; b1.style.width = (e1[1] - e1[0]) / SLOTS * 100 + '%'; b1.textContent = `existente ${hh(e1[0])}–${hh(e1[1])}`;
+  function upd() {
+    const i2 = +$('#cStart').value, f2 = Math.min(SLOTS, i2 + +$('#cDur').value), b2 = $('#cb2'), ov = $('#cov');
+    b2.style.left = i2 / SLOTS * 100 + '%'; b2.style.width = (f2 - i2) / SLOTS * 100 + '%'; b2.textContent = (f2 - i2 >= 3 ? "novo " : "") + `${hh(i2)}–${hh(f2)}`;
+    const c = e1[0] < f2 && e1[1] > i2;
+    if (c) { const a = Math.max(e1[0], i2), b = Math.min(e1[1], f2); ov.style.display = 'block'; ov.style.left = a / SLOTS * 100 + '%'; ov.style.width = (b - a) / SLOTS * 100 + '%'; } else ov.style.display = 'none';
+    const v = $('#cV'); v.className = 'verdict ' + (c ? 'no' : 'yes'); v.textContent = c ? '✖ O profissional já tem um agendamento neste horário' : '✔ horário livre';
+    $('#cExpr').innerHTML = `i₁ &lt; f₂  →  ${hh(e1[0])} &lt; ${hh(f2)}  = <b style="color:var(${e1[0] < f2 ? '--ok' : '--bad'})">${e1[0] < f2}</b>\nf₁ &gt; i₂  →  ${hh(e1[1])} &gt; ${hh(i2)}  = <b style="color:var(${e1[1] > i2 ? '--ok' : '--bad'})">${e1[1] > i2}</b>\nconflito = <b>${c}</b>`;
+  }
+  $('#cStart').oninput = $('#cDur').oninput = upd; upd();
+})();
+
+/* combinatorial explosion */
+(() => {
+  const H = 40;
+  function upd() {
+    const S = +$('#sR').value; $('#sN').textContent = S;
+    const exp = S * Math.log10(H); // 40^S = 10^exp
+    $('#bfV').innerHTML = `10<sup>${Math.floor(exp)}</sup> agendas`;
+    const anos = exp - 9 - 7.5; // 1 bilhão/s, ~3,15·10^7 s/ano
+    $('#bfT').textContent = anos > 0 ? `A 1 bilhão de testes por segundo: ~10^${Math.floor(anos)} anos. O universo tem ~10^10 anos.${exp > 80 ? ' Já são mais agendas do que átomos no universo (~10^80).' : ''}` : 'Ainda cabe… por pouco tempo.';
+    $('#bfM').style.width = Math.min(100, exp / 2) + '%';
+    const g = Math.round(S * Math.log2(Math.max(2, S)) + S * H);
+    $('#grV').textContent = g.toLocaleString('pt-BR') + ' operações';
+    $('#grT').textContent = `Na prática: menos de ${g < 1e5 ? '1 milissegundo' : 'alguns milissegundos'}.`;
+    $('#grM').style.width = Math.max(1.5, Math.log10(g) / 2) + '%';
+  }
+  $('#sR').oninput = upd; upd();
+})();
+</script>
 </body>
 </html>
