@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vindix — Modelos Computacionais e Complexidade no PI</title>
+<style>
+:root{--bg:#0f1720;--card:#16212d;--tx:#e6edf3;--mu:#9fb0c0;--ac:#3ecf8e;--ac2:#5aa9ff;--bd:#243243;--code:#0b121a}
+@media (prefers-color-scheme:light){:root{--bg:#f6f8fa;--card:#fff;--tx:#1b2430;--mu:#5a6878;--ac:#0e9f6e;--ac2:#1f6feb;--bd:#d8dee4;--code:#f0f3f6}}
+*{box-sizing:border-box}
+body{margin:0;font:17px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx)}
+header{padding:64px 20px 40px;text-align:center;border-bottom:1px solid var(--bd)}
+header h1{font-size:2.6rem;margin:0 0 8px;letter-spacing:-.02em}
+header h1 span{color:var(--ac)}
+header p{color:var(--mu);max-width:720px;margin:0 auto}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--bd);z-index:9;overflow-x:auto;white-space:nowrap;text-align:center}
+nav a{display:inline-block;padding:12px 14px;color:var(--mu);text-decoration:none;font-size:.92rem}
+nav a:hover{color:var(--ac)}
+main{max-width:920px;margin:0 auto;padding:0 20px 80px}
+section{padding-top:48px}
+h2{font-size:1.75rem;border-left:4px solid var(--ac);padding-left:12px;margin:0 0 16px}
+h3{font-size:1.2rem;margin:28px 0 8px;color:var(--ac2)}
+.tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:99px;border:1px solid var(--ac);color:var(--ac);margin-right:6px;vertical-align:middle}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:18px 20px;margin:16px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.grid .card{margin:0}
+pre{background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:14px;overflow-x:auto;font-size:.85rem;line-height:1.5}
+code{font-family:ui-monospace,Consolas,monospace;font-size:.88em}
+p code,li code,td code{background:var(--code);padding:1px 5px;border-radius:4px}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.92rem}
+th,td{border:1px solid var(--bd);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--card)}
+.ok{color:var(--ac)}.mu{color:var(--mu)}
+.callout{border-left:4px solid var(--ac2);background:var(--card);padding:12px 16px;border-radius:0 8px 8px 0;margin:18px 0}
+svg text{font-family:system-ui,sans-serif;fill:var(--tx)}
+footer{text-align:center;color:var(--mu);font-size:.85rem;padding:30px;border-top:1px solid var(--bd)}
+</style>
+</head>
+<body>
+<header>
+  <h1><span>Vindix</span></h1>
+  <p>Sistema de gestão para clínicas multidisciplinares — documento técnico da ADC2:<br>
+  <strong>Aplicação de Modelos Computacionais e Complexidade no Projeto Integrador</strong></p>
+</header>
+<nav>
+  <a href="#visao">1. Visão geral</a><a href="#estado">2. Estado atual</a><a href="#lexico">3. Nível 3 — AFD</a><a href="#sintatico">4. Nível 2 — Pilha</a><a href="#complexidade">5. P vs NP</a><a href="#conclusao">6. Conclusão</a>
+</nav>
+<main>
+
+<!-- ============ 1 ============ -->
+<section id="visao">
+<h2>1. Visão Geral do Projeto</h2>
+<h3>O problema</h3>
+<p>Clínicas multidisciplinares (psicologia, fonoaudiologia, terapia ocupacional, fisioterapia etc.) costumam controlar pacientes, agendas e repasses de profissionais com planilhas, agendas de papel e mensagens soltas. Isso gera <strong>choque de horários</strong>, dados sensíveis de saúde espalhados sem controle de acesso, retrabalho no faturamento de convênios e falta de indicadores para a gestão.</p>
+<h3>A solução proposta</h3>
+<p>O <strong>Vindix</strong> é uma aplicação web <em>multiempresa</em> (cada clínica tem seu próprio banco de dados) que centraliza:</p>
+<div class="grid">
+  <div class="card"><strong>Cadastros</strong><br><span class="mu">Pacientes, profissionais e responsáveis, com validação rigorosa (CPF, telefone, e-mail, carteirinha).</span></div>
+  <div class="card"><strong>Agenda</strong><br><span class="mu">Agendamentos únicos e recorrentes com detecção de conflito e sincronização com o Google Agenda.</span></div>
+  <div class="card"><strong>Consultas e evolução</strong><br><span class="mu">Registro dos atendimentos realizados e histórico do paciente.</span></div>
+  <div class="card"><strong>Convênios e financeiro</strong><br><span class="mu">Guias, registro ANS, preços por especialidade e repasse dos profissionais.</span></div>
+  <div class="card"><strong>Permissões granulares</strong><br><span class="mu">Códigos de permissão por tabela e por ação, com histórico de alterações.</span></div>
+  <div class="card"><strong>LGPD</strong><br><span class="mu">Campos sensíveis criptografados, termos de aceite, exportação de dados do titular.</span></div>
+</div>
+<h3>Arquitetura</h3>
+<svg viewBox="0 0 860 190" width="100%" role="img" aria-label="Arquitetura do Vindix">
+  <g fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--ac)">
+    <rect x="10" y="50" width="170" height="80" rx="10"/><rect x="250" y="20" width="250" height="140" rx="10"/>
+    <rect x="570" y="20" width="140" height="60" rx="10"/><rect x="570" y="105" width="140" height="60" rx="10"/><rect x="740" y="60" width="110" height="60" rx="10"/>
+  </g>
+  <g stroke="var(--mu)" stroke-width="1.5" marker-end="url(#a)"><line x1="180" y1="90" x2="248" y2="90"/><line x1="500" y1="55" x2="568" y2="50"/><line x1="500" y1="125" x2="568" y2="135"/><line x1="710" y1="50" x2="738" y2="80"/></g>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--mu)"/></marker></defs>
+  <text x="95" y="85" text-anchor="middle" font-size="15" font-weight="600">Front-end</text><text x="95" y="106" text-anchor="middle" font-size="12">HTML/CSS/JS puro</text>
+  <text x="375" y="48" text-anchor="middle" font-size="15" font-weight="600">API Node.js + Express 5</text>
+  <text x="375" y="74" text-anchor="middle" font-size="12">JWT · helmet · rate-limit · toobusy</text>
+  <text x="375" y="96" text-anchor="middle" font-size="12">regras.js (validação léxica)</text>
+  <text x="375" y="118" text-anchor="middle" font-size="12">express.json (análise sintática)</text>
+  <text x="375" y="140" text-anchor="middle" font-size="12">permissões · agenda · convênios</text>
+  <text x="640" y="47" text-anchor="middle" font-size="13" font-weight="600">Firebird</text><text x="640" y="65" text-anchor="middle" font-size="11">1 banco por clínica</text>
+  <text x="640" y="132" text-anchor="middle" font-size="13" font-weight="600">Nodemailer</text><text x="640" y="150" text-anchor="middle" font-size="11">recuperação de senha</text>
+  <text x="795" y="88" text-anchor="middle" font-size="13" font-weight="600">Google</text><text x="795" y="105" text-anchor="middle" font-size="11">Agenda API</text>
+</svg>
+<p class="mu">As conexões com os bancos das clínicas ficam num cache <code>LRUCache</code> de pools (<code>conexaoBD.js</code>), para que o servidor atenda várias empresas sem abrir conexões ilimitadas.</p>
+</section>
+
+<!-- ============ 2 ============ -->
+<section id="estado">
+<h2>2. Estado Atual de Desenvolvimento</h2>
+<table>
+<tr><th>Módulo</th><th>Situação</th><th>Onde no código</th></tr>
+<tr><td>Login, JWT, recuperação de senha por e-mail</td><td class="ok">Implementado</td><td><code>auth.js</code>, <code>recuperacao.js</code></td></tr>
+<tr><td>Usuários, fotos e permissões com histórico</td><td class="ok">Implementado</td><td><code>funcoes.js</code></td></tr>
+<tr><td>Cadastros de pacientes/profissionais</td><td class="ok">Implementado</td><td><code>regras.js</code>, <code>funcoes.js</code></td></tr>
+<tr><td>Agendamentos (únicos e recorrentes) + conflito</td><td class="ok">Implementado</td><td><code>funcoes.js</code></td></tr>
+<tr><td>Sincronização com Google Agenda</td><td class="ok">Implementado</td><td><code>agenda.js</code></td></tr>
+<tr><td>Convênios, guias e financeiro</td><td class="ok">Implementado</td><td><code>convenios.js</code>, <code>clinica.js</code></td></tr>
+<tr><td>Resumo (indicadores e gráficos)</td><td class="ok">Implementado</td><td><code>funcoes.js</code></td></tr>
+<tr><td>LGPD: termos, exportação, criptografia</td><td class="ok">Implementado</td><td><code>privacidade.js</code>, <code>cripto.js</code></td></tr>
+<tr><td>Migrações de banco, backup/restore, licenças</td><td class="ok">Implementado</td><td><code>scripts/</code>, <code>BKP_BD/</code></td></tr>
+</table>
+<h3>Próximos passos</h3>
+<ul>
+  <li><strong>Sugestão automática de horários</strong> livres para recorrências, usando a heurística descrita na seção 5.</li>
+  <li><strong>Testes automatizados</strong> para o módulo de validação (<code>regras.js</code>), usando os AFDs da seção 3 como casos de teste.</li>
+  <li><strong>Implantação em produção</strong> com HTTPS e proxy reverso, e monitoramento do servidor.</li>
+  <li><em>[Grupo: revisar/completar esta lista com o planejamento real.]</em></li>
+</ul>
+</section>
+
+<!-- ============ 3 ============ -->
+<section id="lexico">
+<h2><span class="tag">Nível 3</span>Validação Léxica com Expressões Regulares e AFD</h2>
+<p>Na hierarquia de Chomsky, as <strong>linguagens regulares</strong> (Tipo 3) são exatamente as reconhecidas por <strong>Autômatos Finitos Determinísticos</strong>, e toda expressão regular pode ser convertida num AFD. Um AFD usa <strong>memória constante</strong> (só o estado atual) e decide se aceita uma entrada de tamanho <em>n</em> em <strong>O(n)</strong>, lendo cada caractere uma única vez. Por isso é o modelo ideal para a "porta de entrada" do sistema: todo dado vindo do formulário passa por um reconhecedor regular antes de chegar ao banco.</p>
+
+<h3>3.1 Onde isso está no Vindix</h3>
+<p>O arquivo <code>FonteJS/source/regras.js</code> define, para cada campo de cada tabela, um tipo, um tamanho máximo e uma expressão regular. A função <code>normalizar()</code> rejeita qualquer entrada fora da linguagem com <code>{ erro: 'formato inválido' }</code>.</p>
+<table>
+<tr><th>Campo</th><th>Expressão regular (real, do código)</th><th>Linguagem aceita</th></tr>
+<tr><td>Telefone</td><td><code>^[0-9()+\-\s]+$</code></td><td>dígitos, parênteses, +, - e espaço</td></tr>
+<tr><td>Carteirinha / Nº guia / ANS</td><td><code>^[0-9A-Za-z.\-\/ ]+$</code></td><td>alfanumérico com . - /</td></tr>
+<tr><td>Login</td><td><code>^[a-zA-Z0-9._@-]{3,64}$</code></td><td>3 a 64 símbolos de um alfabeto restrito</td></tr>
+<tr><td>E-mail</td><td><code>^[a-z0-9._%+'-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$</code></td><td>local@domínio.tld (+ limite de 254)</td></tr>
+<tr><td>Data</td><td><code>^(\d{4})-(\d{2})-(\d{2})$</code></td><td>AAAA-MM-DD</td></tr>
+<tr><td>Hora</td><td><code>^(\d{2}):(\d{2})(?::(\d{2}))?$</code></td><td>HH:MM ou HH:MM:SS</td></tr>
+<tr><td>Token de recuperação</td><td><code>^[0-9a-f]{64}$</code></td><td>exatamente 64 dígitos hexadecimais</td></tr>
+<tr><td>Imagem (foto)</td><td><code>^[A-Za-z0-9+/]+={0,2}$</code></td><td>Base64 válido</td></tr>
+<tr><td>Origem CORS</td><td><code>^https?:\/\/[a-z0-9.-]+(:\d+)?$</code></td><td>URL de origem sem caminho</td></tr>
+</table>
+
+<h3>3.2 AFD do campo Data</h3>
+<p>A expressão <code>^\d{4}-\d{2}-\d{2}$</code> corresponde ao AFD abaixo (Σ = dígitos ∪ {"-"}; qualquer transição não desenhada vai para um estado de erro implícito):</p>
+<svg viewBox="0 0 860 120" width="100%" role="img" aria-label="AFD da data">
+  <defs><marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--mu)"/></marker></defs>
+  <g stroke="var(--mu)" stroke-width="1.4" marker-end="url(#b)">
+    <line x1="5" y1="60" x2="23" y2="60"/>
+  </g>
+  <g id="nodes"></g>
+  <script>
+  (function(){var s=document.currentScript.parentNode,ns="http://www.w3.org/2000/svg",lab=["d","d","d","d","-","d","d","-","d","d"];
+  for(var i=0;i<=10;i++){var x=45+i*76;var c=document.createElementNS(ns,"circle");c.setAttribute("cx",x);c.setAttribute("cy",60);c.setAttribute("r",20);c.setAttribute("fill","none");c.setAttribute("stroke","var(--ac)");c.setAttribute("stroke-width","1.6");s.appendChild(c);
+   if(i==10){var c2=c.cloneNode();c2.setAttribute("r",15);s.appendChild(c2);}
+   var t=document.createElementNS(ns,"text");t.setAttribute("x",x);t.setAttribute("y",65);t.setAttribute("text-anchor","middle");t.setAttribute("font-size","13");t.textContent="q"+i;s.appendChild(t);
+   if(i<10){var l=document.createElementNS(ns,"line");l.setAttribute("x1",x+20);l.setAttribute("y1",60);l.setAttribute("x2",x+55);l.setAttribute("y2",60);l.setAttribute("stroke","var(--mu)");l.setAttribute("stroke-width","1.4");l.setAttribute("marker-end","url(#b)");s.appendChild(l);
+    var tl=document.createElementNS(ns,"text");tl.setAttribute("x",x+38);tl.setAttribute("y",48);tl.setAttribute("text-anchor","middle");tl.setAttribute("font-size","13");tl.textContent=lab[i];s.appendChild(tl);}}
+  })();
+  </script>
+</svg>
+<p class="mu">d = qualquer dígito 0–9. Estado inicial q0, estado de aceitação q10. Memória: 11 estados, independentemente do tamanho da entrada.</p>
+
+<h3>3.3 O limite do modelo — e como o código respeita esse limite</h3>
+<div class="callout">Um AFD reconhece o <em>formato</em> <code>AAAA-MM-DD</code>, mas "30 de fevereiro" ou "mês 13" exigem regras semânticas. E o dígito verificador do CPF é uma soma ponderada módulo 11.</div>
+<p>O grupo separou as duas responsabilidades: a regex faz a análise léxica e uma segunda etapa faz a verificação semântica. Na data, <code>dataValida(a, m, d)</code> monta um <code>Date</code> e confere se ele "volta" igual. No CPF:</p>
+<pre><code>export function cpfValido(cpf) {
+    if (!/^\d{11}$/.test(cpf) || /^(\d)\1{10}$/.test(cpf)) return false;  // filtro léxico
+    for (const t of [9, 10]) {                                           // dígitos verificadores
+        let soma = 0;
+        for (let i = 0; i &lt; t; i++) soma += Number(cpf[i]) * (t + 1 - i);
+        if ((soma * 10) % 11 % 10 !== Number(cpf[t])) return false;
+    }
+    return true;
+}</code></pre>
+<p>Observação de teoria: <code>/^(\d)\1{10}$/</code> usa uma <em>retrorreferência</em> (<code>\1</code>), recurso que vai <strong>além</strong> das linguagens regulares em geral. Aqui ela é inofensiva, porque o alfabeto é finito (10 dígitos): a linguagem "11 dígitos iguais" tem só 10 palavras, logo é finita e portanto regular, equivalente a <code>0{11}|1{11}|…|9{11}</code>. Ou seja, continua cabendo num AFD.</p>
+<p>Na prática, o dígito verificador do CPF <em>também</em> pode ser reconhecido por um AFD: como a soma é feita módulo 11, basta guardar (posição, soma mod 11), um número finito de estados. O grupo preferiu o laço por clareza; os dois têm custo O(n) e memória O(1).</p>
+
+<h3>3.4 Permissões como linguagem regular</h3>
+<p>Os códigos de permissão (<code>Observacoes.txt</code>) formam uma linguagem regular de dois símbolos: <code>1</code> | <code>2</code> | <code>[1-6][0-5]</code> | <code>50</code>, em que o 1º dígito é a tabela (1 cadastros, 2 consultas, 3 especialidades, 4 agendamentos, 6 financeiro) e o 2º é a ação (0 geral, 1 acessar, 2 inserir, 3 alterar, 4 excluir, 5 histórico). O middleware <code>exigirPermissao(1, 10, 12)</code> em cada rota da API funciona como um reconhecedor: a requisição só é aceita se o usuário tiver algum dos códigos listados.</p>
+
+<h3>3.5 Por que isso importa (segurança e ReDoS)</h3>
+<ul>
+<li>Todas as regex são <strong>ancoradas</strong> (<code>^…$</code>), então o reconhecedor aceita a palavra inteira, nunca um pedaço dela. Isso impede injeção de conteúdo extra.</li>
+<li>Os campos têm <strong>tamanho máximo</strong> (<code>max</code>) verificado <em>antes</em> da regex, e as buscas são truncadas em 100 caracteres (<code>filtroBusca</code>).</li>
+<li>As expressões usadas não têm quantificadores aninhados ambíguos (como <code>(a+)+</code>), que fariam o motor de <em>backtracking</em> do JavaScript ter custo exponencial (ataque <strong>ReDoS</strong>). Elas se comportam como um AFD de custo linear.</li>
+</ul>
+</section>
+
+<!-- ============ 4 ============ -->
+<section id="sintatico">
+<h2><span class="tag">Nível 2</span>Análise Sintática e Autômatos de Pilha</h2>
+<p>Toda a comunicação entre o front-end e a API do Vindix é feita em <strong>JSON</strong>. O JSON é uma <strong>linguagem livre de contexto</strong> (Tipo 2): objetos e listas podem se aninhar em qualquer profundidade e cada <code>{</code>/<code>[</code> precisa ser fechado na ordem certa. Pelo <strong>Lema do Bombeamento</strong> para linguagens regulares, a linguagem dos colchetes balanceados <code>{ [ⁿ ]ⁿ }</code> <strong>não é regular</strong>: nenhum AFD, com memória finita, consegue "contar" n aberturas pendentes. Para isso é preciso uma <strong>pilha</strong>, ou seja, um <strong>Autômato de Pilha (AP)</strong>.</p>
+
+<h3>4.1 Onde isso está no Vindix</h3>
+<pre><code>// server.js
+app.use(express.json({ limit: '100kb' }));
+...
+if (status === 413) return res.status(413).json({ erro: 'Conteúdo grande demais' });
+if (status &lt; 500)   return res.status(status).json({ erro: 'Requisição inválida' });</code></pre>
+<p>O <code>express.json</code> faz o <code>JSON.parse</code> do corpo de toda requisição. Esse parser é descendente recursivo, e a pilha de chamadas faz o papel da pilha do AP. Um payload mal formado (chave sem fechar, vírgula sobrando) é rejeitado <strong>antes</strong> de chegar a qualquer regra de negócio, com HTTP 400.</p>
+
+<h3>4.2 Simulação do AP para <code>{"ids":[1,2]}</code></h3>
+<table>
+<tr><th>Símbolo lido</th><th>Ação</th><th>Pilha (topo à direita)</th></tr>
+<tr><td>—</td><td>início</td><td><code>Z₀</code></td></tr>
+<tr><td><code>{</code></td><td>empilha <code>{</code></td><td><code>Z₀ {</code></td></tr>
+<tr><td><code>"ids":</code></td><td>chave + dois-pontos (parte léxica, regular)</td><td><code>Z₀ {</code></td></tr>
+<tr><td><code>[</code></td><td>empilha <code>[</code></td><td><code>Z₀ { [</code></td></tr>
+<tr><td><code>1,2</code></td><td>valores (parte léxica)</td><td><code>Z₀ { [</code></td></tr>
+<tr><td><code>]</code></td><td>topo é <code>[</code>? desempilha</td><td><code>Z₀ {</code></td></tr>
+<tr><td><code>}</code></td><td>topo é <code>{</code>? desempilha</td><td><code>Z₀</code></td></tr>
+<tr><td>fim</td><td>pilha só com <code>Z₀</code> → <strong class="ok">aceita</strong></td><td><code>Z₀</code></td></tr>
+</table>
+<p>Em <code>{"ids":[1,2}</code> o AP lê <code>}</code> com <code>[</code> no topo, não há transição e a entrada é <strong>rejeitada</strong>.</p>
+
+<h3>4.3 Exemplo didático: o reconhecedor de balanceamento</h3>
+<pre><code>// Autômato de pilha simplificado: reconhece { } [ ] balanceados, ignorando strings
+function balanceado(texto) {
+  const pilha = [], par = { '}': '{', ']': '[' };
+  let emString = false, escape = false;
+  for (const c of texto) {                 // O(n): cada símbolo lido uma vez
+    if (emString) { if (escape) escape = false; else if (c === '\\') escape = true; else if (c === '"') emString = false; continue; }
+    if (c === '"') emString = true;
+    else if (c === '{' || c === '[') pilha.push(c);
+    else if (c === '}' || c === ']') { if (pilha.pop() !== par[c]) return false; }
+  }
+  return pilha.length === 0 &amp;&amp; !emString;
+}</code></pre>
+<p>Repare na composição dos níveis: o estado <code>emString</code>/<code>escape</code> é uma parte <em>finita</em> (um AFD embutido para reconhecer strings), e a pilha é a memória extra que só o Nível 2 oferece.</p>
+
+<h3>4.4 Limitando a memória do AP</h3>
+<p>Um AP teórico tem pilha infinita, mas um servidor real não tem. O limite de <strong>100 kb</strong> no corpo da requisição limita o tamanho da entrada e, com isso, a profundidade máxima da pilha. Isso protege o servidor de payloads gigantes ou profundamente aninhados (negação de serviço). Somado a isso, <code>toobusy-js</code> e <code>express-rate-limit</code> cortam a carga quando o laço de eventos está saturado.</p>
+
+<h3>4.5 Depois da sintaxe vem a semântica</h3>
+<p>Um JSON sintaticamente válido ainda pode ser inválido para o negócio. Depois do AP vem a etapa léxica/semântica da seção 3: <code>regras.js</code> percorre cada campo esperado, rejeita tipos errados (<code>'deve ser texto'</code>, <code>'deve ser um número inteiro'</code>) e aplica as regex. O pipeline completo é:</p>
+<p style="text-align:center"><strong>bytes → AP (JSON.parse) → AFDs por campo (regras.js) → regras de negócio (conflito, permissão) → banco</strong></p>
+</section>
+
+<!-- ============ 5 ============ -->
+<section id="complexidade">
+<h2><span class="tag">P vs NP</span>Análise de Complexidade e Tratabilidade</h2>
+
+<h3>5.1 Custo dos algoritmos centrais</h3>
+<table>
+<tr><th>Operação</th><th>Como é feita</th><th>Complexidade</th></tr>
+<tr><td>Validar um campo</td><td>regex ancorada (AFD)</td><td>O(n) no tamanho do campo</td></tr>
+<tr><td>Validar o corpo JSON</td><td>parser com pilha</td><td>O(n), n ≤ 100 kb</td></tr>
+<tr><td>Validar CPF</td><td>dois somatórios módulo 11</td><td>O(1) (11 dígitos fixos)</td></tr>
+<tr><td>Detectar conflito de um agendamento</td><td><code>SELECT FIRST 1</code> por sobreposição de intervalos, filtrando terapeuta OU paciente</td><td>O(log A + k) com índice, O(A) sem índice</td></tr>
+<tr><td>Agendamento recorrente (r repetições)</td><td>r verificações de conflito</td><td>O(r · log A)</td></tr>
+<tr><td>Listagens</td><td>paginação fixa (máx. 100 por página)</td><td>custo da página limitado</td></tr>
+<tr><td>Indicadores do Resumo</td><td>agregação + <code>sort</code> de rankings</td><td>O(m log m)</td></tr>
+<tr><td>Conferir permissão</td><td>pertinência num conjunto de códigos</td><td>O(p), p pequeno</td></tr>
+</table>
+<p class="mu">A = agendamentos no banco; k = agendamentos sobrepostos encontrados; m = itens do ranking.</p>
+
+<h3>5.2 A verificação de conflito: um problema em P</h3>
+<p>Dois intervalos [i₁, f₁) e [i₂, f₂) se sobrepõem se, e somente se, <strong>i₁ &lt; f₂ e f₁ &gt; i₂</strong>. É exatamente essa condição que a consulta de <code>conflitoAgendamento()</code> usa:</p>
+<pre><code>SELECT FIRST 1 A.ID_TERAPEUTA FROM AGENDAMENTOS A
+ WHERE A.STATUS = 'AGENDADO' AND A.ID &lt;&gt; ?
+   AND (A.ID_TERAPEUTA = ? OR A.ID_PACIENTE = ?)
+   AND A.DT_HR_AGENDADA &lt; ?               -- início existente &lt; fim novo
+   AND DATEADD(... A.TEMPO_PREVISTO ...) &gt; ? -- fim existente  &gt; início novo</code></pre>
+<p>Decisões de engenharia aqui:</p>
+<ul>
+<li><strong>Verificar ≠ otimizar.</strong> O sistema responde a uma pergunta de decisão ("este horário é viável?"), que é polinomial, em vez de tentar montar sozinho a agenda ótima da clínica.</li>
+<li><code>FIRST 1</code> faz o banco parar no primeiro conflito encontrado, sem montar a lista inteira.</li>
+<li>Na recorrência, as r datas são verificadas uma a uma e o usuário escolhe <strong>pular os conflitos</strong> (<code>pularConflitos</code>). É uma decisão gulosa, local e de custo linear em r.</li>
+<li>Na edição em lote, <strong>todos</strong> os conflitos são verificados antes de gravar qualquer coisa ("Nada foi alterado"). É um plano de duas fases que evita estados parciais.</li>
+</ul>
+
+<h3>5.3 Onde o PI esbarra em NP</h3>
+<p>A pergunta natural de uma clínica é: <em>"distribua automaticamente os pacientes da semana entre os profissionais, respeitando especialidade, disponibilidade do terapeuta, preferência de horário do paciente (campo <code>PREFERENCIA</code>), salas e convênio, minimizando janelas vazias."</em></p>
+<div class="callout">Esse é um problema de <strong>timetabling / alocação de recursos com restrições</strong>. Na versão de decisão ("existe uma agenda que satisfaz todas as restrições?") ele é <strong>NP-completo</strong>, por redução da <strong>coloração de grafos</strong>: cada sessão é um vértice, sessões que não podem coincidir (mesmo paciente, mesmo terapeuta, mesma sala) são ligadas por arestas, e os horários disponíveis são as "cores". Decidir se o grafo admite k cores é NP-completo para k ≥ 3.</div>
+<p>Força bruta: com S sessões e H horários candidatos, há até <strong>Hˢ</strong> agendas possíveis. Para uma semana modesta (S = 60 sessões, H = 40 horários) isso é 40⁶⁰ ≈ 10⁹⁶ combinações, muito além do número estimado de átomos no universo (~10⁸⁰). Não há hardware que execute isso. Como não se conhece algoritmo polinomial para problemas NP-completos (P vs NP está em aberto), o grupo <strong>não</strong> busca a solução ótima.</p>
+
+<h3>5.4 A heurística adotada (e planejada)</h3>
+<p><strong>Hoje:</strong> a alocação é <em>assistida</em>. A recepção propõe o horário e o sistema decide, em tempo polinomial, se ele é viável. O "problema difícil" fica dividido em muitas perguntas fáceis.</p>
+<p><strong>Próximo passo, sugestão automática de horários:</strong> uma heurística gulosa de coloração (<em>DSatur / maior grau primeiro</em>):</p>
+<ol>
+<li>Ordenar as sessões pendentes pelo número de horários possíveis, da mais restrita para a menos restrita: O(S log S).</li>
+<li>Para cada sessão, escolher o primeiro horário livre compatível com terapeuta, paciente e preferência: O(H) por sessão, cada teste usando a verificação de conflito da seção 5.2.</li>
+<li>Se não houver horário, a sessão vai para uma lista de pendências que a recepção resolve manualmente.</li>
+</ol>
+<p>Custo total: <strong>O(S log S + S · H · log A)</strong>, polinomial, executando em milissegundos para o volume de uma clínica. O preço desse ganho: a solução pode não ser ótima (talvez sobre uma janela que o ótimo eliminaria), mas é <strong>boa, rápida e explicável</strong>, e o humano continua no controle.</p>
+
+<h3>5.5 Outros trade-offs de custo computacional</h3>
+<ul>
+<li><strong>bcrypt</strong> para senhas é <em>propositalmente</em> caro (custo exponencial no fator de trabalho). Aqui a lentidão é a defesa: dificulta força bruta. O <code>loginLimiter</code>/<code>loginSlow</code> controlam esse custo no servidor.</li>
+<li><strong>Google Agenda</strong>: quando a API responde 429/403 (limite de requisições), o <code>agenda.js</code> faz novas tentativas com esperas crescentes (<em>backoff</em>), em vez de insistir em laço.</li>
+<li><strong>LRUCache de pools</strong>: memória limitada para N clínicas, com remoção da menos usada em O(1).</li>
+<li><strong>Paginação obrigatória</strong>: nenhuma rota devolve uma tabela inteira, então o custo de cada resposta é limitado independentemente do tamanho do banco.</li>
+</ul>
+</section>
+
+<!-- ============ 6 ============ -->
+<section id="conclusao">
+<h2>6. Como a disciplina ajudou no desenvolvimento do PI</h2>
+<div class="grid">
+<div class="card"><strong>Nível 3 → entrada segura</strong><br><span class="mu">Saber que regex = AFD nos levou a validar todo campo com expressões ancoradas, lineares e com tamanho máximo, e a separar o léxico (formato) do semântico (CPF, data real).</span></div>
+<div class="card"><strong>Nível 2 → limites de memória</strong><br><span class="mu">Entender que JSON exige pilha explicou por que o parser precisa de limite (100 kb) e por que a validação acontece em camadas: sintaxe primeiro, regras depois.</span></div>
+<div class="card"><strong>P vs NP → escopo realista</strong><br><span class="mu">Reconhecer que a agenda ótima é NP-completa evitou que tentássemos um "otimizador perfeito". Escolhemos verificação polinomial agora e uma heurística gulosa depois.</span></div>
+</div>
+<p>O principal aprendizado de engenharia foi <strong>escolher o modelo computacional mais simples que resolve cada problema</strong>: AFD onde basta memória finita, autômato de pilha só onde há aninhamento, e heurísticas polinomiais onde o problema exato é intratável. Cada nível acima custa mais memória ou tempo, e a disciplina nos deu as ferramentas para justificar essas escolhas.</p>
+</section>
+
+</main>
+<footer>
+Vindix · Projeto Integrador 2025 · Repositório: <a href="https://github.com/pifaculdade2025/vindix" style="color:var(--ac)">github.com/pifaculdade2025/vindix</a><br>
+Integrantes: Rafael, Diego, Vinícius e Murilo
+</footer>
+</body>
+</html>
